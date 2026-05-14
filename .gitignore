@@ -1,0 +1,22 @@
+# System
+.DS_Store
+node_modules/
+*.log
+
+# Claude / agent context (local only)
+.claude/
+CLAUDE.md
+claude-code-prompt.md
+
+# Internal pricing source
+Devis • 2025.xlsx
+pricing.json
+data/
+
+# Internal docs / strategy
+docs/
+references/
+talkspirit-demo-solveg.md
+
+# Working source (only the root index.html is published)
+src/

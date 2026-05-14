@@ -1,0 +1,2432 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulateur de prix Talkspirit</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --brand:        #F56220;
+    --brand-50:     #FFF5ED;
+    --brand-100:    #FEE9D6;
+    --brand-700:    #BF300F;
+    --cream:        #F9F6F3;
+    --greige-100:   #F0EBE4;
+    --greige-200:   #E2D6CA;
+    --greige-300:   #CDB8A4;
+    --greige-500:   #AA7F65;
+    --greige-700:   #825A4C;
+    --slate:        #2E1F1C;
+    --muted:        #6A4B42;
+    --ts-kicker:     13px;
+    --ts-body:       15px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    font-size: var(--ts-body); line-height: 1.7;
+    background: var(--cream); color: var(--slate); margin: 0;
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  }
+  p, li { line-height: 1.7; }
+
+  /* Progress bar */
+  #progress-bar {
+    position: fixed; top: 0; left: 0; height: 3px;
+    background: var(--brand); z-index: 1000; transition: width 0.1s; width: 0%;
+  }
+
+  /* Nav dots */
+  .nav-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(245,98,32,0.2); cursor: pointer; transition: all 0.3s; }
+  .nav-dot.active { background: var(--brand); transform: scale(1.4); }
+
+  /* Cards */
+  .card { border-radius: 24px; transition: transform 0.25s, box-shadow 0.25s; box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
+
+  /* Kicker */
+  .kicker { font-size: var(--ts-kicker); font-weight: 700; color: var(--brand); letter-spacing: 2px; text-transform: uppercase; }
+  .kicker-muted { font-size: var(--ts-kicker); font-weight: 700; color: var(--greige-500); letter-spacing: 1.5px; text-transform: uppercase; }
+
+  em.accent { font-style: italic; color: var(--brand); font-weight: 500; }
+
+  /* Pills */
+  .pill { display: inline-flex; align-items: center; gap: 6px; background: var(--brand-50); color: var(--brand-700); font-size: 13px; font-weight: 600; padding: 4px 12px; border-radius: 100px; white-space: nowrap; }
+  .pill-greige { background: var(--greige-100); color: var(--muted); border: 1px solid var(--greige-200); font-size: 13px; font-weight: 500; padding: 4px 12px; border-radius: 100px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+
+  /* Module tabs */
+  .module-tab {
+    cursor: pointer; transition: all 0.18s; border-radius: 999px;
+    padding: 8px 18px; font-size: 14px; font-weight: 600;
+    border: 2px solid var(--greige-200); color: var(--muted);
+    background: white; white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .module-tab:hover { border-color: var(--brand); color: var(--brand); }
+  .module-tab.active { background: var(--brand); color: white; border-color: var(--brand); }
+  .module-tab.activated::before { content: '✓'; font-weight: 800; color: var(--brand); }
+  .module-tab.active.activated::before { color: white; }
+
+  /* Family badges */
+  .badge-family { font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 100px; letter-spacing: 0.5px; text-transform: uppercase; display: inline-flex; align-items: center; }
+  .badge-talk { background: #E0F2FE; color: #0369A1; }
+  .badge-hola { background: #FEF3C7; color: #92400E; }
+  .badge-mixed { background: linear-gradient(135deg, #E0F2FE 0%, #FEF3C7 100%); color: #5B4520; }
+
+  /* Header */
+  .top-header {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(249, 246, 243, 0.92); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--greige-200);
+    padding: 14px 0;
+  }
+  .top-header .logo-block { display: flex; align-items: center; gap: 12px; }
+  .top-header .brand-name { font-size: 17px; font-weight: 800; color: var(--slate); letter-spacing: -0.3px; }
+  .top-header .brand-sub { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .price-pill {
+    display: inline-flex; flex-direction: column;
+    background: white; border: 1.5px solid var(--brand-100);
+    border-radius: 16px; padding: 8px 16px;
+  }
+  .price-pill .amount { font-size: 22px; font-weight: 800; color: var(--slate); letter-spacing: -0.5px; line-height: 1; }
+  .price-pill .meta { font-size: 11px; color: var(--muted); font-weight: 500; margin-top: 4px; }
+
+  /* Freq toggle */
+  .freq-toggle { display: inline-flex; background: var(--greige-100); border-radius: 999px; padding: 4px; }
+  .freq-toggle button { border: none; background: transparent; padding: 6px 16px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; transition: all 0.18s; font-family: inherit; }
+  .freq-toggle button.active { background: white; color: var(--slate); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+
+  /* PDF button */
+  .pdf-btn { background: var(--slate); color: white; border: none; padding: 10px 18px; border-radius: 999px; font-weight: 700; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-family: inherit; transition: opacity .15s; }
+  .pdf-btn:hover { opacity: 0.85; }
+
+  /* Language toggle */
+  .lang-toggle { display: inline-flex; background: var(--greige-100); border-radius: 999px; padding: 3px; gap: 2px; }
+  .lang-toggle button { border: none; background: transparent; padding: 5px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; color: var(--muted); cursor: pointer; transition: all 0.18s; font-family: inherit; letter-spacing: 0.5px; }
+  .lang-toggle button.active { background: white; color: var(--slate); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+
+  /* Range input */
+  input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; background: var(--greige-200); border-radius: 3px; outline: none; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 24px; height: 24px; background: var(--brand); border-radius: 50%; cursor: pointer; box-shadow: 0 2px 8px rgba(245,98,32,0.35); border: 3px solid white; }
+  input[type="range"]::-moz-range-thumb { width: 24px; height: 24px; background: var(--brand); border-radius: 50%; cursor: pointer; box-shadow: 0 2px 8px rgba(245,98,32,0.35); border: 3px solid white; }
+  input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type="number"] { -moz-appearance: textfield; }
+
+  .num-input { background: white; border: 2px solid var(--greige-200); border-radius: 12px; padding: 10px 14px; font-family: inherit; font-size: 18px; font-weight: 700; color: var(--slate); width: 100px; text-align: center; transition: border-color 0.18s; }
+  .num-input:focus { outline: none; border-color: var(--brand); }
+  .num-input-small { background: white; border: 1.5px solid var(--greige-200); border-radius: 10px; padding: 6px 10px; font-family: inherit; font-size: 14px; font-weight: 600; color: var(--slate); width: 80px; text-align: center; transition: border-color 0.18s; }
+  .num-input-small:focus { outline: none; border-color: var(--brand); }
+
+  /* Activate button */
+  .activate-btn { background: white; border: 2px solid var(--brand); color: var(--brand); font-weight: 700; padding: 11px 26px; border-radius: 999px; cursor: pointer; transition: all 0.18s; font-size: 14px; font-family: inherit; display: inline-flex; align-items: center; gap: 8px; }
+  .activate-btn:hover { background: var(--brand-50); transform: translateY(-1px); }
+  .activate-btn.activated { background: var(--brand); color: white; }
+  .activate-btn.activated::before { content: '✓'; font-weight: 800; }
+  .activate-btn:not(.activated)::before { content: '+'; font-size: 18px; line-height: 1; }
+
+  /* Plan chip */
+  .plan-chip { background: white; border: 2px solid var(--greige-200); padding: 12px 20px; border-radius: 16px; cursor: pointer; transition: all 0.18s; text-align: left; display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 140px; font-family: inherit; }
+  .plan-chip:hover { border-color: var(--brand); }
+  .plan-chip.active { border-color: var(--brand); background: var(--brand-50); }
+  .plan-chip.suggested:not(.active) { border-color: var(--brand); border-style: dashed; }
+  .plan-chip .plan-name { font-size: 16px; font-weight: 700; color: var(--slate); }
+  .plan-chip .plan-meta { font-size: 12px; color: var(--muted); }
+  .plan-chip .plan-price { font-size: 13px; font-weight: 700; color: var(--brand); margin-top: 2px; }
+
+  /* Banners */
+  .banner { border-radius: 14px; padding: 14px 18px; font-size: 14px; display: flex; align-items: flex-start; gap: 12px; }
+  .banner-warn { background: #FEF3C7; color: #78350F; border: 1px solid #FCD34D; }
+  .banner-error { background: #FEE2E2; color: #7F1D1D; border: 1px solid #FCA5A5; }
+  .banner-info { background: var(--brand-50); color: var(--brand-700); border: 1px solid var(--brand-100); }
+
+  /* Module bullets (Solveg style) */
+  .module-bullets { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 14px; margin: 0; }
+  .module-bullets li { display: flex; gap: 12px; align-items: flex-start; font-size: 15px; color: #475569; line-height: 1.65; }
+  .module-bullets li .spark-icon { flex-shrink: 0; margin-top: 4px; }
+
+  /* Recap table */
+  .recap-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .recap-table thead th { background: #FFE5A0; text-transform: uppercase; font-size: 11px; letter-spacing: 1px; font-weight: 700; color: var(--slate); padding: 12px 14px; text-align: left; border-bottom: 2px solid var(--greige-200); }
+  .recap-table thead th.right { text-align: right; }
+  .recap-table tbody td { padding: 14px; border-bottom: 1px solid var(--greige-200); vertical-align: top; }
+  .recap-table tbody tr:nth-child(even) td { background: #FFFBF5; }
+  .recap-table .right { text-align: right; font-variant-numeric: tabular-nums; }
+  .recap-table .label-secondary { font-size: 12px; color: var(--muted); margin-top: 2px; font-style: italic; }
+  .recap-table .total-row td { background: var(--slate) !important; color: white; font-weight: 700; font-size: 16px; border: none; }
+  .recap-table .subtotal-row td { background: var(--greige-100) !important; font-weight: 700; border-top: 2px solid var(--greige-300); }
+  .recap-table .discount-row td { background: var(--brand-50) !important; color: var(--brand-700); font-weight: 600; }
+
+  /* Section dividers */
+  .section-num { display: inline-flex; align-items: center; gap: 14px; margin-bottom: 8px; color: var(--greige-500); font-size: 13px; font-weight: 700; letter-spacing: 2px; }
+  .section-num::before, .section-num::after { content: ''; width: 32px; height: 1px; background: var(--greige-300); }
+
+  /* Info dot */
+  .info-dot { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: var(--greige-200); color: var(--muted); font-size: 10px; font-weight: 700; cursor: help; position: relative; }
+  .info-dot:hover::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: var(--slate); color: var(--greige-100); font-size: 12px; font-weight: 400; line-height: 1.5; padding: 8px 12px; border-radius: 8px; width: 220px; z-index: 100; text-align: left; }
+
+  /* Commercial mode */
+  .commercial-only { display: none; }
+  .commercial-mode .commercial-only { display: block; }
+
+  /* Per-line discount row */
+  .perline-row {
+    display: grid; grid-template-columns: 1fr auto auto auto;
+    gap: 12px; align-items: center; padding: 12px;
+    border: 1px solid var(--greige-200); border-radius: 12px;
+    background: white; margin-bottom: 8px;
+  }
+  .perline-row .name { font-weight: 600; font-size: 14px; }
+  .perline-row .sub { font-size: 12px; color: var(--muted); }
+
+  /* ====== CHAT ASSISTANT ====== */
+  .chat-launcher {
+    position: fixed; bottom: 24px; right: 24px; z-index: 100;
+    width: 60px; height: 60px; border-radius: 50%;
+    background: var(--brand); color: white;
+    border: none; cursor: pointer;
+    box-shadow: 0 8px 24px rgba(245,98,32,0.35);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.2s;
+  }
+  .chat-launcher:hover { transform: scale(1.08); }
+  .chat-launcher svg { width: 26px; height: 26px; }
+
+  .chat-panel {
+    position: fixed; bottom: 100px; right: 24px; z-index: 99;
+    width: 380px; max-width: calc(100vw - 48px);
+    height: 540px; max-height: calc(100vh - 140px);
+    background: white; border-radius: 24px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.2), 0 0 0 1px var(--greige-200);
+    display: none; flex-direction: column; overflow: hidden;
+  }
+  .chat-panel.open { display: flex; }
+  .chat-header {
+    padding: 16px 20px;
+    background: var(--slate); color: white;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .chat-header .chat-title { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+  .chat-header .chat-subtitle { font-size: 11px; opacity: 0.7; }
+  .chat-close { background: rgba(255,255,255,0.15); border: none; color: white; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 16px; }
+  .chat-messages {
+    flex: 1; padding: 16px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 10px;
+    background: var(--cream);
+  }
+  .chat-msg {
+    max-width: 85%; padding: 10px 14px; border-radius: 14px; font-size: 14px; line-height: 1.5;
+    word-wrap: break-word;
+  }
+  .chat-msg.user { background: var(--brand); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+  .chat-msg.bot { background: white; color: var(--slate); align-self: flex-start; border: 1px solid var(--greige-200); border-bottom-left-radius: 4px; }
+  .chat-msg.bot strong { color: var(--brand-700); }
+  .chat-suggestions {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    padding: 10px 16px 0; background: var(--cream);
+  }
+  .chat-suggestion {
+    font-size: 12px; padding: 5px 10px; border-radius: 100px;
+    background: white; border: 1px solid var(--greige-200);
+    color: var(--muted); cursor: pointer; font-family: inherit;
+    transition: all 0.15s;
+  }
+  .chat-suggestion:hover { border-color: var(--brand); color: var(--brand); }
+  .chat-input-row {
+    display: flex; gap: 8px; padding: 12px 16px;
+    background: white; border-top: 1px solid var(--greige-200);
+  }
+  .chat-input {
+    flex: 1; border: 1.5px solid var(--greige-200); border-radius: 12px;
+    padding: 10px 14px; font-family: inherit; font-size: 14px; outline: none;
+  }
+  .chat-input:focus { border-color: var(--brand); }
+  .chat-send {
+    background: var(--brand); border: none; color: white;
+    padding: 0 18px; border-radius: 12px; cursor: pointer; font-weight: 700; font-family: inherit;
+  }
+  .chat-send:hover { background: var(--brand-700); }
+
+  /* Print — seul #quote-print est visible */
+  @media print {
+    body > *:not(#quote-print) { display: none !important; }
+    #quote-print { display: block !important; }
+  }
+  #quote-print { display: none; }
+
+  /* Quote print styles */
+  #quote-print {
+    font-family: 'DM Sans', sans-serif;
+    color: #2E1F1C;
+    background: white;
+    padding: 0;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .q-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 32px 40px 24px; border-bottom: 3px solid #F56220; }
+  .q-logo { height: 28px; }
+  .q-header-right { text-align: right; }
+  .q-header-right h1 { font-size: 22px; font-weight: 800; color: #2E1F1C; margin: 0 0 4px; letter-spacing: -0.5px; }
+  .q-header-right .q-ref { font-size: 11px; color: #AA7F65; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+  .q-meta { display: flex; gap: 0; padding: 16px 40px; background: #F9F6F3; border-bottom: 1px solid #E2D6CA; }
+  .q-meta-block { flex: 1; }
+  .q-meta-block .label { font-size: 10px; font-weight: 700; color: #AA7F65; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px; }
+  .q-meta-block .value { font-size: 13px; font-weight: 600; color: #2E1F1C; }
+  .q-body { padding: 24px 40px; }
+  .q-section-title { font-size: 10px; font-weight: 700; color: #AA7F65; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid #E2D6CA; }
+  .q-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .q-table th { background: #2E1F1C; color: white; padding: 8px 12px; text-align: left; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+  .q-table th.r { text-align: right; }
+  .q-table td { padding: 9px 12px; border-bottom: 1px solid #F0EBE4; vertical-align: top; }
+  .q-table td.r { text-align: right; }
+  .q-table tr:nth-child(even) td { background: #FDFCFB; }
+  .q-table .q-discount-row td { background: #FFF5ED !important; color: #BF300F; font-weight: 600; }
+  .q-table .q-subtotal-row td { background: #F0EBE4 !important; font-weight: 600; border-top: 1px solid #CDB8A4; }
+  .q-table .q-total-row td { background: #2E1F1C !important; color: white !important; font-weight: 800; font-size: 14px; }
+  .q-sublabel { font-size: 10px; color: #AA7F65; font-style: italic; margin-top: 2px; }
+  .q-badge { display: inline-block; font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 100px; vertical-align: middle; margin-left: 4px; }
+  .q-badge-talk { background: #FEE9D6; color: #BF300F; }
+  .q-badge-hola { background: #EDE9FF; color: #5B21B6; }
+  .q-footer { padding: 16px 40px 32px; border-top: 1px solid #E2D6CA; display: flex; justify-content: space-between; align-items: center; }
+  .q-footer .q-note { font-size: 10px; color: #AA7F65; max-width: 60%; }
+  .q-footer .q-total-summary { text-align: right; }
+  .q-footer .q-total-summary .big { font-size: 28px; font-weight: 800; color: #F56220; line-height: 1; }
+  .q-footer .q-total-summary .small { font-size: 11px; color: #AA7F65; margin-top: 2px; }
+  .print-only { display: none; }
+</style>
+</head>
+<body>
+
+<!-- Access gate -->
+<style>
+  #auth-gate {
+    position: fixed; inset: 0; z-index: 99999;
+    background: var(--cream);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  #auth-gate .auth-card {
+    background: white; border-radius: 24px; padding: 48px 40px;
+    box-shadow: 0 8px 48px rgba(0,0,0,0.10);
+    width: 100%; max-width: 420px;
+    display: flex; flex-direction: column; align-items: center; gap: 24px;
+  }
+  #auth-gate .auth-logo { height: 32px; }
+  #auth-gate .auth-title { font-size: 22px; font-weight: 700; color: var(--slate); text-align: center; margin: 0; }
+  #auth-gate .auth-sub { font-size: 14px; color: var(--muted); text-align: center; margin: -12px 0 0; }
+  #auth-gate .auth-field { width: 100%; display: flex; flex-direction: column; gap: 6px; }
+  #auth-gate .auth-field label { font-size: 13px; font-weight: 600; color: var(--slate); letter-spacing: 0.5px; }
+  #auth-gate .auth-input {
+    width: 100%; padding: 12px 16px; border: 1.5px solid var(--greige-200);
+    border-radius: 12px; font-family: 'DM Sans', sans-serif; font-size: 15px;
+    color: var(--slate); background: var(--cream); outline: none;
+    transition: border-color 0.2s;
+  }
+  #auth-gate .auth-input:focus { border-color: var(--brand); background: white; }
+  #auth-gate .auth-input.error { border-color: #e53e3e; background: #fff5f5; }
+  #auth-gate .auth-btn {
+    width: 100%; padding: 14px; background: var(--brand); color: white;
+    border: none; border-radius: 12px; font-family: 'DM Sans', sans-serif;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+  }
+  #auth-gate .auth-btn:hover { background: var(--brand-700); }
+  #auth-gate .auth-btn:active { transform: scale(0.98); }
+  #auth-gate .auth-error {
+    font-size: 13px; color: #e53e3e; font-weight: 500; text-align: center;
+    display: none; margin: -12px 0 0;
+  }
+  #auth-gate .auth-footer { font-size: 12px; color: var(--greige-300); text-align: center; }
+</style>
+
+<div id="auth-gate">
+  <div class="auth-card">
+    <img class="auth-logo"
+      src="https://assets-global.website-files.com/63f4481e7f89ee1c5b69c77f/63f4481e7f89ee1c5b69c7b3_Logo-Talkspirit-Orange.svg"
+      onerror="this.style.display='none'"
+      alt="Talkspirit">
+    <h1 class="auth-title">Simulateur de prix</h1>
+    <p class="auth-sub">Accès réservé aux équipes Talkspirit</p>
+    <div class="auth-field">
+      <label for="auth-password-input">Mot de passe</label>
+      <input id="auth-password-input" type="password" class="auth-input"
+        placeholder="••••••••••••" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter') authSubmit()">
+    </div>
+    <p id="auth-error" class="auth-error">Mot de passe incorrect. Réessayez.</p>
+    <button class="auth-btn" onclick="authSubmit()">Accéder au simulateur</button>
+    <p class="auth-footer">Talkspirit · Usage interne</p>
+  </div>
+</div>
+
+<script>
+(function() {
+  const _h='2208d03c7ef756cf21af6a8a68f88c316fce89101d4198dac0c3a99ad8f669e3';
+  const _s=new TextEncoder().encode('talkspirit-pricing-simulator-v1');
+  const _i=1000000;
+  const SESSION_KEY='ts_pricing_auth';
+
+  async function _d(pw){
+    const km=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveBits']);
+    const b=await crypto.subtle.deriveBits({name:'PBKDF2',salt:_s,iterations:_i,hash:'SHA-256'},km,256);
+    return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');
+  }
+
+  window.authSubmit=async function(){
+    const input=document.getElementById('auth-password-input');
+    const errEl=document.getElementById('auth-error');
+    const btn=document.querySelector('#auth-gate .auth-btn');
+    if(btn){btn.disabled=true;btn.textContent='Vérification…';}
+    const ok=(await _d(input.value))===_h;
+    if(btn){btn.disabled=false;btn.textContent='Accéder au simulateur';}
+    if(ok){
+      sessionStorage.setItem(SESSION_KEY,'1');
+      document.getElementById('auth-gate').remove();
+    }else{
+      input.classList.add('error');
+      errEl.style.display='block';
+      input.value='';
+      input.focus();
+    }
+  };
+
+  // Auto-unlock if already authenticated this session
+  if (sessionStorage.getItem(SESSION_KEY) === '1') {
+    document.addEventListener('DOMContentLoaded', () => {
+      const gate = document.getElementById('auth-gate');
+      if (gate) gate.remove();
+    });
+  }
+})();
+</script>
+
+<!-- Progress bar -->
+<div id="progress-bar"></div>
+
+<!-- Nav dots -->
+<nav class="fixed right-6 top-1/2 -translate-y-1/2 z-40 flex-col gap-3 hidden lg:flex no-print">
+  <div class="nav-dot active" data-target="s1" title="Votre équipe"></div>
+  <div class="nav-dot" data-target="s2" title="Vos modules"></div>
+  <div class="nav-dot" data-target="s3" title="Vos add-ons"></div>
+  <div class="nav-dot" data-target="s4" title="Vos remises"></div>
+  <div class="nav-dot" data-target="s5" title="Votre coût"></div>
+</nav>
+
+<!-- Top header with logo top-left + price + controls -->
+<header class="top-header no-print">
+  <div class="max-w-6xl mx-auto px-6 flex items-center justify-between gap-4 flex-wrap">
+    <div class="logo-block">
+      <svg width="32" height="32" viewBox="0 0 1080 1080" fill="none" style="flex-shrink:0">
+        <path d="M867.857 1072.29C842.143 1072.29 820.286 1063.29 802.286 1045.29C678.857 911.572 592.714 807.429 543.857 732.857L381.857 991.286C363.857 1022.14 334.286 1037.57 293.143 1037.57C246.857 1037.57 223.714 1015.71 223.714 972C223.714 964.286 226.286 950.143 231.429 929.571L424.286 624.857C318.857 648 222.429 690.429 135 752.143C104.143 767.572 81 775.286 65.5714 775.286C45 775.286 28.2857 768.857 15.4286 756C5.14285 740.572 0 721.286 0 698.143C0 672.429 15.4286 646.714 46.2857 621C167.143 543.857 277.714 491.143 378 462.857C360 439.714 333 389.572 297 312.429C261 235.286 230.143 182.571 204.429 154.286C199.286 138.857 196.714 122.143 196.714 104.143C196.714 81.0001 207 59.1429 227.571 38.5714C248.143 18.0001 271.286 7.71448 297 7.71448C338.143 7.71448 384.429 54.0001 435.857 146.571C456.429 182.571 478.286 225 501.429 273.857L563.143 393.429V397.286C648 261 707.143 158.143 740.571 88.7143C768.857 50.1429 801 30.8573 837 30.8573C883.286 30.8573 906.429 52.7144 906.429 96.4287C906.429 122.143 884.572 172.286 840.857 246.857L740.571 420.429C897.429 405 979.714 396 987.429 393.429C1049.14 393.429 1080 412.714 1080 451.286C1080 474.429 1071 497.572 1053 520.714C1035 541.286 1013.14 556.714 987.429 567C948.857 572.143 896.143 577.286 829.286 582.429L686.571 594C753.429 694.286 840.857 801 948.857 914.143C959.143 924.429 964.286 943.714 964.286 972C964.286 997.714 954 1020.86 933.429 1041.43C912.857 1062 891 1072.29 867.857 1072.29Z" fill="#F56220"/>
+      </svg>
+      <div>
+        <div class="brand-name">Talkspirit</div>
+        <div class="brand-sub">Simulateur de prix</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-3 flex-wrap">
+      <div class="price-pill">
+        <div class="amount"><span id="sticky-total">—</span> <span style="font-size: 13px; color: var(--muted); font-weight: 500;" id="sticky-unit">/an</span></div>
+        <div class="meta" id="sticky-detail">Commencez par renseigner le nombre d'utilisateurs.</div>
+      </div>
+      <div class="freq-toggle" id="freq-toggle">
+        <button class="active" data-freq="annual" data-i18n="freq_annual">Annuel</button>
+        <button data-freq="monthly" data-i18n="freq_monthly">Mensuel</button>
+      </div>
+      <div class="lang-toggle" id="lang-toggle">
+        <button class="active" data-lang="fr">FR</button>
+        <button data-lang="en">EN</button>
+        <button data-lang="de">DE</button>
+      </div>
+      <button onclick="printQuote()" class="pdf-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span data-i18n="btn_pdf">Télécharger PDF</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- Print header -->
+<div id="print-header" class="print-only" style="padding: 20px 0; border-bottom: 2px solid var(--brand); margin-bottom: 24px;">
+  <div style="max-width: 800px; margin: 0 auto;">
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+      <svg width="28" height="28" viewBox="0 0 1080 1080" fill="none"><path d="M867.857 1072.29C842.143 1072.29 820.286 1063.29 802.286 1045.29C678.857 911.572 592.714 807.429 543.857 732.857L381.857 991.286C363.857 1022.14 334.286 1037.57 293.143 1037.57C246.857 1037.57 223.714 1015.71 223.714 972C223.714 964.286 226.286 950.143 231.429 929.571L424.286 624.857C318.857 648 222.429 690.429 135 752.143C104.143 767.572 81 775.286 65.5714 775.286C45 775.286 28.2857 768.857 15.4286 756C5.14285 740.572 0 721.286 0 698.143C0 672.429 15.4286 646.714 46.2857 621C167.143 543.857 277.714 491.143 378 462.857C360 439.714 333 389.572 297 312.429C261 235.286 230.143 182.571 204.429 154.286C199.286 138.857 196.714 122.143 196.714 104.143C196.714 81.0001 207 59.1429 227.571 38.5714C248.143 18.0001 271.286 7.71448 297 7.71448C338.143 7.71448 384.429 54.0001 435.857 146.571C456.429 182.571 478.286 225 501.429 273.857L563.143 393.429V397.286C648 261 707.143 158.143 740.571 88.7143C768.857 50.1429 801 30.8573 837 30.8573C883.286 30.8573 906.429 52.7144 906.429 96.4287C906.429 122.143 884.572 172.286 840.857 246.857L740.571 420.429C897.429 405 979.714 396 987.429 393.429C1049.14 393.429 1080 412.714 1080 451.286C1080 474.429 1071 497.572 1053 520.714C1035 541.286 1013.14 556.714 987.429 567C948.857 572.143 896.143 577.286 829.286 582.429L686.571 594C753.429 694.286 840.857 801 948.857 914.143C959.143 924.429 964.286 943.714 964.286 972C964.286 997.714 954 1020.86 933.429 1041.43C912.857 1062 891 1072.29 867.857 1072.29Z" fill="#F56220"/></svg>
+      <div style="font-weight: 800; font-size: 18px; color: var(--slate);">Talkspirit — Votre simulation de prix</div>
+    </div>
+    <div style="font-size: 12px; color: var(--muted);" id="print-date"></div>
+  </div>
+</div>
+
+<!-- 01 — VOTRE ÉQUIPE -->
+<section id="s1" class="pt-10 pb-12 px-6">
+  <div class="max-w-5xl mx-auto">
+    <div class="section-num">01</div>
+    <div class="kicker mb-2" data-i18n="s1_kicker">Votre équipe</div>
+    <h2 class="text-3xl md:text-4xl font-bold mb-3" style="letter-spacing: -0.5px; line-height: 1.2;" data-i18n-html="s1_h2">
+      Combien d'utilisateurs aurez-vous sur <em class="accent">Talkspirit</em> ?
+    </h2>
+    <p class="mb-8" style="color: var(--muted);" data-i18n="s1_desc">Le plan s'ajuste automatiquement selon le nombre de personnes. Vous pouvez forcer un autre choix si besoin.</p>
+
+    <div class="card bg-white p-8 mb-4">
+      <label class="kicker-muted block mb-3" data-i18n="s1_licenses_label">Licences membres</label>
+      <div class="flex items-center gap-5 flex-wrap">
+        <div style="flex: 1; min-width: 240px;">
+          <input type="range" id="licenses-range" min="1" max="1000" value="50" />
+        </div>
+        <input type="number" id="licenses-input" min="1" max="20000" value="50" class="num-input" />
+      </div>
+      <div class="text-xs mt-3" style="color: var(--muted);" data-i18n="s1_licenses_hint">De 1 à 14 000 personnes. Au-delà : tarif sur devis.</div>
+    </div>
+
+    <div class="flex items-center gap-3 mb-6 flex-wrap" style="padding: 8px 0;">
+      <label class="text-sm" style="color: var(--muted);">
+        <span data-i18n="s1_guests_label">Guests / membres inactifs</span>
+        <span class="info-dot" data-i18n-tip="s1_guests_tip" data-tip="Utilisateurs externes ou inactifs avec accès limité. Facturés par tranches de 100. Inclus illimité sur Enterprise.">i</span>
+      </label>
+      <input type="number" id="guests-input" min="0" max="10000" value="0" class="num-input-small" />
+      <span class="text-xs" style="color: var(--muted);" data-i18n="s1_guests_price">49 € la tranche de 100</span>
+    </div>
+
+    <div id="plan-banner" class="banner banner-info mb-4" style="display:none"></div>
+
+    <div class="flex gap-3 flex-wrap" id="plan-chips"></div>
+  </div>
+</section>
+
+<!-- 02 — VOS MODULES -->
+<section id="s2" class="py-12 px-6" style="background: white;">
+  <div class="max-w-5xl mx-auto">
+    <div class="section-num">02</div>
+    <div class="kicker mb-2" data-i18n="s2_kicker">Vos modules</div>
+    <h2 class="text-3xl md:text-4xl font-bold mb-3" style="letter-spacing: -0.5px; line-height: 1.2;" data-i18n-html="s2_h2">
+      Chaque module est <em class="accent">autonome</em>. Vous payez ce que vous activez.
+    </h2>
+    <p class="mb-6" style="color: var(--muted);" data-i18n="s2_desc">Cliquez un module pour voir ce qu'il fait, ce qu'il inclut sans surcoût, et son prix. <span id="modules-activated-count" style="color: var(--brand); font-weight: 700;"></span></p>
+
+    <div class="flex gap-2 flex-wrap mb-6" id="app-tabs"></div>
+    <div id="app-detail" class="card bg-white p-8 md:p-10"></div>
+
+    <div id="hola-structure-warning" class="banner banner-warn mt-6" style="display:none">
+      <div style="flex-shrink: 0; font-size: 20px;">⚠</div>
+      <div>
+        <span data-i18n-html="hola_warning"><strong>Sans Structure, vous perdez le cœur d'Holaspirit.</strong> Rôles, cercles, agreements, gouvernance — tous reposent sur Structure.</span>
+        <button id="add-structure-btn" class="ml-2 underline font-semibold" style="color: var(--brand-700); background: none; border: none; cursor: pointer;" data-i18n="hola_activate">Activer Structure</button>
+      </div>
+    </div>
+
+    <div id="no-module-warning" class="banner banner-warn mt-6" style="display:none">
+      <div style="flex-shrink: 0; font-size: 20px;">⚠</div>
+      <div data-i18n="no_module_warning">Activez au moins un module pour finaliser votre simulation. Les add-ons seuls ne peuvent pas être validés.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 — VOS ADD-ONS -->
+<section id="s3" class="py-12 px-6">
+  <div class="max-w-5xl mx-auto">
+    <div class="section-num">03</div>
+    <div class="kicker mb-2" data-i18n="s3_kicker">Vos add-ons</div>
+    <h2 class="text-3xl md:text-4xl font-bold mb-3" style="letter-spacing: -0.5px; line-height: 1.2;" data-i18n-html="s3_h2">
+      Les <em class="accent">briques optionnelles</em> qui complètent.
+    </h2>
+    <p class="mb-6" style="color: var(--muted);" data-i18n="s3_desc">Cochez ce dont vous avez besoin. Tout est désactivable, le prix s'adapte instantanément.</p>
+
+    <div class="flex gap-2 flex-wrap mb-6" id="addon-tabs"></div>
+    <div id="addon-detail" class="card bg-white p-8 md:p-10"></div>
+  </div>
+</section>
+
+<!-- 04 — VOS REMISES -->
+<section id="s4" class="py-12 px-6" style="background: white;">
+  <div class="max-w-5xl mx-auto">
+    <div class="section-num">04</div>
+    <div class="kicker mb-2" data-i18n="s4_kicker">Votre situation</div>
+    <h2 class="text-3xl md:text-4xl font-bold mb-3" style="letter-spacing: -0.5px; line-height: 1.2;" data-i18n-html="s4_h2">
+      Avez-vous droit à <em class="accent">une remise</em> ?
+    </h2>
+    <p class="mb-6" style="color: var(--muted);" data-i18n="s4_desc">Une seule case à cocher si vous êtes éligible. Le tarif s'ajuste sur toutes les lignes.</p>
+
+    <div class="card bg-white p-6 md:p-8 mb-4" style="background: var(--brand-50);">
+      <label class="flex items-start gap-4 cursor-pointer">
+        <input type="checkbox" id="ngo-checkbox" class="mt-1" style="width: 20px; height: 20px; accent-color: var(--brand); cursor: pointer;" />
+        <div>
+          <div class="font-bold mb-1" style="font-size: 16px;" data-i18n="ngo_label">Association ou Établissement éducatif</div>
+          <div style="color: var(--muted); font-size: 14px;" data-i18n-html="ngo_desc">Si votre organisation est une association à but non lucratif ou un établissement éducatif, bénéficiez automatiquement de <strong style="color: var(--brand-700);">−50 % sur toutes les lignes</strong>.</div>
+        </div>
+      </label>
+    </div>
+
+    <!-- Commercial mode — hidden by default -->
+    <div class="commercial-only">
+      <!-- Multiple global discounts -->
+      <div class="card bg-white p-6 md:p-8 mb-4" style="border: 2px dashed var(--greige-300);">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <div class="kicker-muted mb-1" data-i18n="discount_global_kicker">Mode commercial · Remises globales</div>
+            <div class="font-bold" style="font-size: 16px;" data-i18n="discount_global_title">Remises commerciales</div>
+            <p class="text-sm mt-1" style="color: var(--muted);" data-i18n="discount_global_desc">Cumulables. Chaque remise apparaît comme une ligne dans le récap.</p>
+          </div>
+          <button onclick="addCustomDiscount()" class="activate-btn" style="font-size: 13px; padding: 8px 18px; white-space: nowrap;" data-i18n="discount_add">+ Ajouter</button>
+        </div>
+        <div id="custom-discounts-list"></div>
+      </div>
+
+      <!-- Per-line custom discounts -->
+      <div class="card bg-white p-6 md:p-8" style="border: 2px dashed var(--greige-300);">
+        <div class="kicker-muted mb-1" data-i18n="discount_targeted_kicker">Mode commercial · Remises ciblées</div>
+        <div class="font-bold mb-3" style="font-size: 16px;" data-i18n="discount_targeted_title">Remises sur des modules ou add-ons spécifiques</div>
+        <p class="text-sm mb-4" style="color: var(--muted);" data-i18n="discount_targeted_desc">Activez une remise sur une ligne précise du devis. Cumulable avec la remise globale.</p>
+        <div id="perline-discount-list"></div>
+      </div>
+    </div>
+
+    <!-- Discreet toggle to reveal commercial mode -->
+    <div class="text-center mt-6 no-print">
+      <button id="commercial-toggle" class="text-xs font-medium" style="color: var(--greige-500); background: none; border: none; cursor: pointer; padding: 4px 12px;" data-i18n="commercial_mode_on">
+        ✦ Activer le mode commercial
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- 05 — VOTRE COÛT -->
+<section id="s5" class="py-12 px-6">
+  <div class="max-w-5xl mx-auto">
+    <div class="section-num">05</div>
+    <div class="kicker mb-2" data-i18n="s5_kicker">Votre coût Talkspirit</div>
+    <h2 class="text-3xl md:text-4xl font-bold mb-3" style="letter-spacing: -0.5px; line-height: 1.2;" data-i18n-html="s5_h2">
+      Voici, <em class="accent">en clair</em>, ce que vous payez.
+    </h2>
+    <p class="mb-6" style="color: var(--muted);" data-i18n="s5_desc">Le récap complet de votre configuration. Imprimable et partageable.</p>
+
+    <div class="card bg-white p-6 md:p-10" id="recap-card">
+      <div class="overflow-x-auto">
+        <table class="recap-table" id="recap-table">
+          <thead>
+            <tr>
+              <th data-i18n="recap_label">Ce que vous activez</th>
+              <th class="right" style="width: 60px;" data-i18n="recap_qty">Qté</th>
+              <th class="right" style="width: 100px;" data-i18n="recap_unit">P.U.</th>
+              <th class="right" style="width: 100px;" data-i18n="recap_discount">Remise</th>
+              <th class="right" style="width: 120px;" data-i18n="recap_subtotal">Sous-total</th>
+            </tr>
+          </thead>
+          <tbody id="recap-tbody"></tbody>
+        </table>
+      </div>
+      <p class="mt-3 text-xs" style="color:var(--muted);" data-i18n="price_ht">Prix hors taxes (HT)</p>
+      <div id="recap-flags" class="mt-4 space-y-2"></div>
+    </div>
+
+    <div class="text-center mt-8 no-print">
+      <button onclick="printQuote()" class="activate-btn activated" style="font-size: 15px; padding: 14px 32px;" data-i18n="btn_download_pdf">
+        Télécharger en PDF
+      </button>
+      <p class="mt-3 text-xs" style="color: var(--muted);" data-i18n="s5_indicative">
+        Cette simulation est indicative. Tarif final à confirmer avec votre interlocuteur Talkspirit.
+      </p>
+    </div>
+  </div>
+</section>
+
+<footer class="py-10 px-6 no-print" style="border-top: 1px solid var(--greige-200); background: var(--cream);">
+  <div class="max-w-5xl mx-auto text-center">
+    <div class="kicker-muted mb-2" data-i18n="footer_tagline">Talkspirit · La plateforme tout-en-un</div>
+    <p style="color: var(--muted); font-size: 13px;" data-i18n="footer_note">Simulation indicative — les tarifs définitifs sont confirmés par votre interlocuteur commercial Talkspirit avant signature.</p>
+  </div>
+</footer>
+
+<!-- ====== CHAT ASSISTANT ====== -->
+<button class="chat-launcher no-print" id="chat-launcher" aria-label="Ouvrir l'assistant IA">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+</button>
+<div class="chat-panel no-print" id="chat-panel">
+  <div class="chat-header">
+    <div>
+      <div class="chat-title">✦ Assistant Talkspirit</div>
+      <div class="chat-subtitle">Modifiez votre simulation en langage naturel</div>
+    </div>
+    <button class="chat-close" id="chat-close" aria-label="Fermer">×</button>
+  </div>
+  <div class="chat-suggestions" id="chat-suggestions">
+    <button class="chat-suggestion" data-cmd="200 licences">200 licences</button>
+    <button class="chat-suggestion" data-cmd="active Newsfeed et Chat">+ Newsfeed + Chat</button>
+    <button class="chat-suggestion" data-cmd="remise 15%">Remise 15 %</button>
+    <button class="chat-suggestion" data-cmd="préset PME 50">Préset PME 50</button>
+    <button class="chat-suggestion" data-cmd="affiche en annuel">Vue annuelle</button>
+    <button class="chat-suggestion" data-cmd="reset">Reset</button>
+  </div>
+  <div class="chat-messages" id="chat-messages"></div>
+  <div class="chat-input-row">
+    <input type="text" class="chat-input" id="chat-input" placeholder="Ex : 'passe à 300 licences'..." autocomplete="off" />
+    <button class="chat-send" id="chat-send">Envoyer</button>
+  </div>
+</div>
+
+<script>
+// ============================================================================
+// PRICING DATA
+// Mensuel et annuel sont deux tracks distincts, lus indépendamment.
+// ============================================================================
+const PRICING = {
+  plans: {
+    rise:       { name: 'Rise',       upfront: { monthly: 99,  annual: 1188 }, max_members: 100,  warn_threshold: 95,  storage_gb: 500,  cap_label: "jusqu'à 100 personnes" },
+    scale:      { name: 'Scale',      upfront: { monthly: 249, annual: 2988 }, max_members: 300,  warn_threshold: 285, storage_gb: 1000, cap_label: "jusqu'à 300 personnes" },
+    enterprise: { name: 'Enterprise', upfront: { monthly: 499, annual: 5988 }, max_members: null, min_members: 300,    storage_gb: null, cap_label: '300+ personnes, dégressif' }
+  },
+  enterprise_thresholds: [300, 350, 400, 450, 500, 600, 700, 800, 950, 1000, 1250, 1500, 1750, 2000, 2500, 3000, 3500, 4000, 5000, 6000, 7000, 8500, 10000, 12000, 14000],
+  apps: [
+    { id: 'newsfeed', name: 'Newsfeed', family: 'talk', pricing_mode: 'per_user',
+      rates: { rise: { monthly: 3.00, annual: 36 }, scale: { monthly: 2.75, annual: 33 },
+               enterprise: { monthly_per_user: {"300":2.75,"350":2.726,"400":2.671,"450":2.602,"500":2.528,"600":2.372,"700":2.233,"800":2.110,"950":1.949,"1000":1.904,"1250":1.699,"1500":1.544,"1750":1.422,"2000":1.324,"2500":1.169,"3000":1.057,"3500":0.971,"4000":0.903,"5000":0.799,"6000":0.726,"7000":0.670,"8500":0.608,"10000":0.562,"12000":0.517,"14000":0.483},
+                            annual_per_user:  {"300":33.00,"350":32.71,"400":32.05,"450":31.22,"500":30.34,"600":28.46,"700":26.80,"800":25.32,"950":23.39,"1000":22.85,"1250":20.39,"1500":18.53,"1750":17.06,"2000":15.89,"2500":14.03,"3000":12.68,"3500":11.65,"4000":10.84,"5000":9.59,"6000":8.71,"7000":8.04,"8500":7.30,"10000":6.74,"12000":6.20,"14000":5.80} } },
+      auto_includes: ['Drive', 'Calendrier & Événements', 'Annuaire', 'Publications', 'Groupes', 'Sondages', 'Checklists', 'Gallery', 'Workflow', 'AI Assistant', 'Recherche', 'Statistiques'],
+      solveg_title: `Fédérer toute l'organisation autour d'une information vivante`,
+      bullets: [
+        `Fil d'actualité commun pour la communication globale + groupes dédiés par société, métier ou site — chacun garde son identité, sans recréer de silos`,
+        'Publications enrichies (photos, vidéos, sondages, annonces RH) avec ciblage par entité ou audience',
+        `Statistiques de lecture et taux d'engagement — vous saurez qui a vu quoi, et où concentrer vos efforts`
+      ] },
+
+    { id: 'chat', name: 'Chat', family: 'talk', pricing_mode: 'per_user',
+      rates: { rise: { monthly: 1.50, annual: 18 }, scale: { monthly: 1.25, annual: 15 },
+               enterprise: { monthly_per_user: {"300":1.25,"350":1.25,"400":1.244,"450":1.228,"500":1.207,"600":1.154,"700":1.105,"800":1.059,"950":0.996,"1000":0.979,"1250":0.897,"1500":0.834,"1750":0.784,"2000":0.743,"2500":0.678,"3000":0.631,"3500":0.595,"4000":0.566,"5000":0.521,"6000":0.490,"7000":0.466,"8500":0.439,"10000":0.419,"12000":0.399,"14000":0.384},
+                            annual_per_user:  {"300":15.00,"350":15.00,"400":14.93,"450":14.74,"500":14.48,"600":13.85,"700":13.26,"800":12.71,"950":11.95,"1000":11.75,"1250":10.76,"1500":10.01,"1750":9.41,"2000":8.92,"2500":8.14,"3000":7.57,"3500":7.14,"4000":6.79,"5000":6.25,"6000":5.88,"7000":5.59,"8500":5.27,"10000":5.03,"12000":4.79,"14000":4.61} } },
+      auto_includes: [],
+      solveg_title: 'Remplacer WhatsApp par un canal sécurisé et souverain',
+      bullets: [
+        'Conversations par équipe, société, projet ou thématique — fini les groupes WhatsApp informels et dispersés',
+        'Notifications push mobile — idéal pour les opérateurs terrain et les équipes sans bureau',
+        'Historique conservé et recherchable, hébergement en France conforme RGPD'
+      ] },
+
+    { id: 'library', name: 'Library', family: 'talk', pricing_mode: 'per_user',
+      rates: { rise: { monthly: 2.00, annual: 24 }, scale: { monthly: 1.75, annual: 21 },
+               enterprise: { monthly_per_user: {"300":1.75,"350":1.75,"400":1.742,"450":1.720,"500":1.692,"600":1.618,"700":1.548,"800":1.483,"950":1.396,"1000":1.371,"1250":1.256,"1500":1.168,"1750":1.098,"2000":1.040,"2500":0.950,"3000":0.883,"3500":0.832,"4000":0.792,"5000":0.730,"6000":0.686,"7000":0.652,"8500":0.614,"10000":0.587,"12000":0.559,"14000":0.538},
+                            annual_per_user:  {"300":21.00,"350":21.00,"400":20.90,"450":20.64,"500":20.30,"600":19.42,"700":18.58,"800":17.80,"950":16.75,"1000":16.45,"1250":15.07,"1500":14.02,"1750":13.18,"2000":12.48,"2500":11.40,"3000":10.60,"3500":9.98,"4000":9.50,"5000":8.76,"6000":8.23,"7000":7.82,"8500":7.37,"10000":7.04,"12000":6.71,"14000":6.46} } },
+      auto_includes: [],
+      solveg_title: `Une source de vérité unique pour toute l'organisation`,
+      bullets: [
+        'Pages illimitées organisées en 3 niveaux : guides RH, FAQ, procédures qualité, juridique, charte',
+        `Accès consultable depuis mobile, y compris pour les guests sans adresse email — l'information atteint le terrain`,
+        `Mises à jour collaboratives, traçabilité des modifications, droits d'accès par groupe`
+      ] },
+
+    { id: 'office', name: 'Office', family: 'talk', pricing_mode: 'per_user',
+      rates: { rise: { monthly: 2.00, annual: 24 }, scale: { monthly: 1.50, annual: 18 },
+               enterprise: { monthly_per_user: {"300":1.50,"350":1.50,"400":1.50,"450":1.50,"500":1.493,"600":1.457,"700":1.415,"800":1.375,"950":1.316,"1000":1.299,"1250":1.217,"1500":1.152,"1750":1.099,"2000":1.055,"2500":0.985,"3000":0.934,"3500":0.894,"4000":0.862,"5000":0.812,"6000":0.777,"7000":0.750,"8500":0.720,"10000":0.697,"12000":0.675,"14000":0.658},
+                            annual_per_user:  {"300":18.00,"350":18.00,"400":18.00,"450":18.00,"500":17.92,"600":17.48,"700":16.98,"800":16.50,"950":15.79,"1000":15.59,"1250":14.60,"1500":13.82,"1750":13.19,"2000":12.66,"2500":11.82,"3000":11.21,"3500":10.73,"4000":10.34,"5000":9.74,"6000":9.32,"7000":9.00,"8500":8.64,"10000":8.36,"12000":8.10,"14000":7.90} } },
+      auto_includes: ['OnlyOffice'],
+      solveg_title: `L'édition de documents à plusieurs, en temps réel`,
+      bullets: [
+        'Documents, tableurs, présentations co-édités en temps réel via OnlyOffice',
+        'Plus jamais une version perdue : tout le monde travaille sur la dernière',
+        'Intégré dans la plateforme, hébergement en France'
+      ] },
+
+    { id: 'structure', name: 'Structure', family: 'hola', pricing_mode: 'per_user',
+      rates: { rise: { monthly: 1.50, annual: 18 }, scale: { monthly: 1.50, annual: 18 },
+               enterprise: { monthly_per_user: {"300":1.50,"350":1.486,"400":1.456,"450":1.419,"500":1.378,"600":1.293,"700":1.218,"800":1.151,"950":1.063,"1000":1.038,"1250":0.927,"1500":0.842,"1750":0.776,"2000":0.722,"2500":0.638,"3000":0.576,"3500":0.530,"4000":0.493,"5000":0.436,"6000":0.396,"7000":0.366,"8500":0.332,"10000":0.307,"12000":0.282,"14000":0.263},
+                            annual_per_user:  {"300":18.00,"350":17.83,"400":17.47,"450":17.03,"500":16.54,"600":15.52,"700":14.62,"800":13.81,"950":12.76,"1000":12.46,"1250":11.12,"1500":10.10,"1750":9.31,"2000":8.66,"2500":7.66,"3000":6.91,"3500":6.36,"4000":5.92,"5000":5.23,"6000":4.75,"7000":4.39,"8500":3.98,"10000":3.68,"12000":3.38,"14000":3.16} } },
+      auto_includes: ['Rôles', 'Cercles', 'Agreements', 'Decision-making', 'Organigramme dynamique', 'Annuaire', 'Custom fields', 'Exports', 'Statistiques'],
+      solveg_title: `L'organigramme qui pilote vraiment l'organisation`,
+      bullets: [
+        `Rôles, cercles et redevabilités : chaque personne sait ce qu'on attend d'elle`,
+        'Organigramme dynamique mis à jour en continu — pas un PowerPoint figé',
+        'Décisions partagées, accords explicites, gouvernance documentée'
+      ] },
+
+    { id: 'meetings', name: 'Meetings', family: 'hola', pricing_mode: 'per_user',
+      rates: { rise: { monthly: 2.50, annual: 30 }, scale: { monthly: 2.00, annual: 24 },
+               enterprise: { monthly_per_user: {"300":2.50,"350":2.50,"400":2.50,"450":2.50,"500":2.488,"600":2.428,"700":2.360,"800":2.292,"950":2.193,"1000":2.165,"1250":2.027,"1500":1.919,"1750":1.831,"2000":1.758,"2500":1.642,"3000":1.556,"3500":1.489,"4000":1.436,"5000":1.354,"6000":1.295,"7000":1.250,"8500":1.200,"10000":1.162,"12000":1.125,"14000":1.097},
+                            annual_per_user:  {"300":24.00,"350":24.00,"400":24.00,"450":24.00,"500":23.86,"600":23.16,"700":22.36,"800":21.56,"950":20.39,"1000":20.06,"1250":18.45,"1500":17.20,"1750":16.18,"2000":15.34,"2500":13.99,"3000":13.00,"3500":12.23,"4000":11.60,"5000":10.65,"6000":9.97,"7000":9.45,"8500":8.88,"10000":8.43,"12000":8.02,"14000":7.69} } },
+      auto_includes: [],
+      solveg_title: 'Des réunions qui produisent vraiment des décisions',
+      bullets: [
+        'Agendas structurés, comptes rendus partagés, décisions tracées',
+        `Réunions récurrentes (tactiques, gouvernance) avec templates prêts à l'emploi`,
+        'Suivi des actions et des engagements après chaque réunion'
+      ] },
+
+    { id: 'projects', name: 'Projects & Actions', family: 'mixed', pricing_mode: 'per_user',
+      rates: { rise: { monthly: 3.50, annual: 42 }, scale: { monthly: 3.00, annual: 36 },
+               enterprise: { monthly_per_user: {"300":3.50,"350":3.50,"400":3.50,"450":3.50,"500":3.483,"600":3.399,"700":3.302,"800":3.207,"950":3.068,"1000":3.029,"1250":2.837,"1500":2.685,"1750":2.562,"2000":2.461,"2500":2.298,"3000":2.177,"3500":2.084,"4000":2.010,"5000":1.895,"6000":1.812,"7000":1.750,"8500":1.679,"10000":1.627,"12000":1.574,"14000":1.535},
+                            annual_per_user:  {"300":36.00,"350":36.00,"400":36.00,"450":36.00,"500":35.83,"600":34.99,"700":34.02,"800":33.07,"950":31.68,"1000":31.29,"1250":29.37,"1500":27.85,"1750":26.62,"2000":25.61,"2500":23.98,"3000":22.77,"3500":21.84,"4000":21.10,"5000":19.95,"6000":19.12,"7000":18.50,"8500":17.79,"10000":17.27,"12000":16.74,"14000":16.35} } },
+      auto_includes: [],
+      solveg_title: 'Le board projet où rien ne se perd',
+      bullets: [
+        'Boards Kanban, vues liste, calendrier — chacun voit ses tâches dans le format qui lui parle',
+        'Intégrations Todoist, Omnifocus, Outlook — vos outils existants restent connectés',
+        `Statistiques d'avancement, dépendances, alertes de retard`
+      ] },
+
+    { id: 'okr', name: 'OKR', family: 'hola', pricing_mode: 'per_user',
+      rates: { rise: { monthly: 3.50, annual: 42 }, scale: { monthly: 3.00, annual: 36 },
+               enterprise: { monthly_per_user: {"300":3.50,"350":3.50,"400":3.50,"450":3.50,"500":3.483,"600":3.399,"700":3.302,"800":3.207,"950":3.068,"1000":3.029,"1250":2.837,"1500":2.685,"1750":2.562,"2000":2.461,"2500":2.298,"3000":2.177,"3500":2.084,"4000":2.010,"5000":1.895,"6000":1.812,"7000":1.750,"8500":1.679,"10000":1.627,"12000":1.574,"14000":1.535},
+                            annual_per_user:  {"300":36.00,"350":36.00,"400":36.00,"450":36.00,"500":35.83,"600":34.99,"700":34.02,"800":33.07,"950":31.68,"1000":31.29,"1250":29.37,"1500":27.85,"1750":26.62,"2000":25.61,"2500":23.98,"3000":22.77,"3500":21.84,"4000":21.10,"5000":19.95,"6000":19.12,"7000":18.50,"8500":17.79,"10000":17.27,"12000":16.74,"14000":16.35} } },
+      auto_includes: [],
+      solveg_title: `L'alignement stratégique, en vue de plongée`,
+      bullets: [
+        `Objectifs et résultats clés par équipe, par rôle ou pour toute l'organisation`,
+        'Vue hiérarchique : on voit comment chaque action remonte à la stratégie',
+        'Suivi de progression continu, recalibrage trimestriel ou plus fréquent'
+      ] }
+  ],
+  addons: [
+    { id: 'videoconf', name: 'VideoConf', family: 'talk', pricing_mode: 'fixed',
+      rates: { rise: { monthly: 49, annual: 588 }, scale: { monthly: 99, annual: 1188 },
+               enterprise: { monthly_per_tier: {"300":149,"350":173.83,"400":198.67,"450":223.5,"500":248.33,"600":298,"700":350,"800":397.33,"950":471.83,"1000":496.67,"1250":620.83,"1500":745,"1750":869.17,"2000":993.33,"2500":1241.67,"3000":1490,"3500":1738.33,"4000":1986.67,"5000":2483.33,"6000":2980,"7000":3476.67,"8500":4221.67,"10000":4966.67,"12000":5960,"14000":6953.33},
+                            annual_per_tier:  {"300":1788,"350":2086,"400":2384,"450":2682,"500":2980,"600":3576,"700":4200,"800":4768,"950":5662,"1000":5960,"1250":7450,"1500":8940,"1750":10430,"2000":11920,"2500":14900,"3000":17880,"3500":20860,"4000":23840,"5000":29800,"6000":35760,"7000":41720,"8500":50660,"10000":59600,"12000":71520,"14000":83440} } },
+      solveg_title: 'Réunions de groupe sans friction, sans Zoom ni Teams',
+      bullets: [
+        `Visio intégrée sans installation, lançable directement depuis le chat ou le fil d'actualité`,
+        `80 participants avec caméra, enregistrement illimité, partage d'écran, sondages, lever la main`,
+        'Solution souveraine basée sur Jitsi, hébergée en France — pas de transit par les serveurs américains'
+      ] },
+
+    { id: 'homepage', name: 'Homepage', family: 'talk', pricing_mode: 'fixed',
+      rates: { rise: { monthly: 49, annual: 588 }, scale: { monthly: 99, annual: 1188 },
+               enterprise: { monthly_per_tier: {"300":99,"350":115.5,"400":132,"450":148.5,"500":165,"600":198,"700":231,"800":264,"950":313.5,"1000":330,"1250":412.5,"1500":495,"1750":577.5,"2000":660,"2500":825,"3000":990,"3500":1155,"4000":1320,"5000":1650,"6000":1980,"7000":2310,"8500":2805,"10000":3300,"12000":3960,"14000":4620},
+                            annual_per_tier:  {"300":1188,"350":1386,"400":1584,"450":1782,"500":1980,"600":2376,"700":2772,"800":3168,"950":3762,"1000":3960,"1250":4950,"1500":5940,"1750":6930,"2000":7920,"2500":9900,"3000":11880,"3500":13860,"4000":15840,"5000":19800,"6000":23760,"7000":27720,"8500":33660,"10000":39600,"12000":47520,"14000":55440} } },
+      solveg_title: `Une page d'accueil sur-mesure pour votre organisation`,
+      bullets: [
+        'Widgets personnalisés : chiffres clés, raccourcis, dernières publications, événements',
+        'Audiences différenciées : siège, terrain, partenaires — chacun voit la page qui lui correspond',
+        'Évolutive en interne, sans équipe technique nécessaire'
+      ] },
+
+    { id: 'livestream', name: 'Livestream', family: 'talk', pricing_mode: 'fixed',
+      rates: { rise: { monthly: 99, annual: 1188 }, scale: { monthly: 199, annual: 2388 },
+               enterprise: { monthly_per_tier: {"300":99,"350":115.5,"400":132,"450":148.5,"500":165,"600":198,"700":231,"800":264,"950":313.5,"1000":330,"1250":412.5,"1500":495,"1750":577.5,"2000":660,"2500":825,"3000":990,"3500":1155,"4000":1320,"5000":1650,"6000":1980,"7000":2310,"8500":2805,"10000":3300,"12000":3960,"14000":4620},
+                            annual_per_tier:  {"300":1188,"350":1386,"400":1584,"450":1782,"500":1980,"600":2376,"700":2772,"800":3168,"950":3762,"1000":3960,"1250":4950,"1500":5940,"1750":6930,"2000":7920,"2500":9900,"3000":11880,"3500":13860,"4000":15840,"5000":19800,"6000":23760,"7000":27720,"8500":33660,"10000":39600,"12000":47520,"14000":55440} } },
+      solveg_title: 'Le direct à grande échelle, en interne',
+      bullets: [
+        'Plénières, annonces stratégiques, webinaires internes — sans plafond de participants',
+        'Chat live, sondages en direct, questions modérées par les organisateurs',
+        `Rediffusion automatique accessible en différé pour ceux qui n'ont pas pu suivre`
+      ] },
+
+    { id: 'bot', name: 'Bot', family: 'talk', pricing_mode: 'fixed',
+      rates: { rise: { monthly: 199, annual: 2388 }, scale: { monthly: 299, annual: 3588 },
+               enterprise: { monthly_per_tier: {"300":149,"350":173.83,"400":198.67,"450":223.5,"500":248.33,"600":298,"700":347.67,"800":397.33,"950":471.83,"1000":496.67,"1250":620.83,"1500":745,"1750":869.17,"2000":993.33,"2500":1241.67,"3000":1490,"3500":1738.33,"4000":1986.67,"5000":2483.33,"6000":2980,"7000":3476.67,"8500":4221.67,"10000":4966.67,"12000":5960,"14000":6953.33},
+                            annual_per_tier:  {"300":1788,"350":2086,"400":2384,"450":2682,"500":2980,"600":3576,"700":4172,"800":4768,"950":5662,"1000":5960,"1250":7450,"1500":8940,"1750":10430,"2000":11920,"2500":14900,"3000":17880,"3500":20860,"4000":23840,"5000":29800,"6000":35760,"7000":41720,"8500":50660,"10000":59600,"12000":71520,"14000":83440} } },
+      solveg_title: `L'assistant qui répond aux questions répétitives`,
+      bullets: [
+        'Bot FAQ alimenté par votre base de connaissances — automatise les questions internes courantes',
+        'Disponible 24/7 dans Chat — vos équipes obtiennent une réponse immédiate, sans solliciter un humain',
+        `S'améliore en continu à partir des questions posées et des retours utilisateurs`
+      ] },
+
+    { id: 'timespent', name: 'TimeSpent', family: 'hola', pricing_mode: 'fixed',
+      rates: { rise: { monthly: 29, annual: 348 }, scale: { monthly: 29, annual: 348 },
+               enterprise: { monthly_per_tier: {"300":29,"350":33.83,"400":38.67,"450":43.5,"500":48.33,"600":58,"700":67.67,"800":77.33,"950":91.83,"1000":96.67,"1250":120.83,"1500":145,"1750":169.17,"2000":193.33,"2500":241.67,"3000":290,"3500":338.33,"4000":386.67,"5000":483.33,"6000":580,"7000":676.67,"8500":821.67,"10000":966.67,"12000":1160,"14000":1353.33},
+                            annual_per_tier:  {"300":348,"350":406,"400":464,"450":522,"500":580,"600":696,"700":812,"800":928,"950":1102,"1000":1160,"1250":1450,"1500":1740,"1750":2030,"2000":2320,"2500":2900,"3000":3480,"3500":4060,"4000":4640,"5000":5800,"6000":6960,"7000":8120,"8500":9860,"10000":11600,"12000":13920,"14000":16240} } },
+      solveg_title: 'Le temps passé, par rôle ou par cercle',
+      bullets: [
+        'Saisie simple du temps passé sur chaque rôle, par utilisateur',
+        'Vision agrégée par cercle, par projet, par activité — utile pour la facturation interne ou la planification',
+        'Idéal pour les organisations en holacratie ou en gouvernance distribuée'
+      ] },
+
+    { id: 'translation_2', name: 'Translation 1-2 langues', family: 'hola', pricing_mode: 'fixed',
+      rates: { rise: { monthly: 49, annual: 588 }, scale: { monthly: 49, annual: 588 }, enterprise: { monthly: 49, annual: 588 } },
+      solveg_title: 'Chaque collaborateur lit dans sa langue — 1 ou 2 langues',
+      bullets: [
+        'Interface disponible dans la langue native de chaque utilisateur',
+        `Traduction à la demande des publications du fil d'actualité`,
+        'Idéal pour les équipes franco-anglaises ou bilingues'
+      ],
+      exclusive_with: ['translation_unlimited'] },
+
+    { id: 'translation_unlimited', name: 'Translation 3+ langues', family: 'hola', pricing_mode: 'fixed',
+      rates: { rise: { monthly: 79, annual: 948 }, scale: { monthly: 79, annual: 948 }, enterprise: { monthly: 79, annual: 948 } },
+      solveg_title: 'Une organisation, plusieurs langues — traduction automatique',
+      bullets: [
+        'Interface disponible en plusieurs langues simultanément (8 langues supportées)',
+        `Traduction automatique des publications, sans effort de l'auteur — un seul message touche toutes les populations`,
+        'Idéal pour les organisations internationales avec 3+ langues métier (FR/EN/NL, par exemple)'
+      ],
+      exclusive_with: ['translation_2'] },
+
+    { id: 'holacracy', name: 'Holacracy', family: 'hola', pricing_mode: 'per_user',
+      rates: { rise: { monthly: 1.00, annual: 12 }, scale: { monthly: 1.00, annual: 12 },
+               enterprise: { monthly_per_user: {"300":1,"350":1,"400":1,"450":1,"500":0.995,"600":0.9708,"700":0.9429,"800":0.9156,"950":0.8763,"1000":0.865,"1250":0.81,"1500":0.7667,"1750":0.7314,"2000":0.7025,"2500":0.656,"3000":0.6217,"3500":0.595,"4000":0.5737,"5000":0.541,"6000":0.5175,"7000":0.4996,"8500":0.4795,"10000":0.4646,"12000":0.4497,"14000":0.4385},
+                            annual_per_user:  {"300":12,"350":12,"400":12,"450":12,"500":11.94,"600":11.65,"700":11.31,"800":10.99,"950":10.52,"1000":10.38,"1250":9.72,"1500":9.20,"1750":8.78,"2000":8.43,"2500":7.87,"3000":7.46,"3500":7.14,"4000":6.89,"5000":6.49,"6000":6.21,"7000":6.00,"8500":5.75,"10000":5.58,"12000":5.40,"14000":5.26} } },
+      solveg_title: `L'auto-gouvernance, opérationnelle`,
+      bullets: [
+        `Réunions tactiques et de gouvernance avec templates Holacracy® prêts à l'emploi`,
+        'Processus de traitement des tensions documenté et traçable',
+        'Conformité Holacracy® v5 — idéal pour les organisations en auto-gouvernance'
+      ] },
+
+    { id: 'hds', name: 'HDS', family: 'talk', pricing_mode: 'fixed',
+      rates: { rise: { monthly: 300, annual: 3600 }, scale: { monthly: 500, annual: 6000 }, enterprise: { quote_required: true } },
+      solveg_title: 'Le pré-requis pour le secteur santé',
+      bullets: [
+        'Hébergement de Données de Santé certifié ASIP — conformité réglementaire pour le secteur médical',
+        'Audit annuel et traçabilité réglementaire',
+        'Indispensable pour les CHU, cliniques, mutuelles, laboratoires manipulant des données patient'
+      ] },
+
+    { id: 'storage_extra', name: 'Stockage supplémentaire', family: 'talk', pricing_mode: 'per_tb',
+      rates: { rise: { monthly_per_tb: 100, annual_per_tb: 1200 }, scale: { monthly_per_tb: 100, annual_per_tb: 1200 }, enterprise: { monthly_per_tb: 100, annual_per_tb: 1200 } },
+      solveg_title: 'Du stockage en plus, par téra activé',
+      bullets: [
+        'Au-delà des 500 Go (Rise) ou 1 To (Scale) inclus dans votre plan',
+        '100 €/To/mois — facturation par téra activé, sans engagement',
+        'Activation immédiate par tranche supplémentaire'
+      ] }
+  ],
+  guests: {
+    tranche_size: 100,
+    rates: {
+      rise:  { monthly_per_tranche: 49, annual_per_tranche: 588 },
+      scale: { monthly_per_tranche: 49, annual_per_tranche: 588 },
+      enterprise: 'included'
+    },
+    product_gap: 'Gratuit côté produit malgré la facturation commerciale.'
+  },
+  presets: [
+    { id: 'pme-50',          label: 'PME 50',              licenses: 50,  guests: 0, apps: ['newsfeed', 'chat', 'office'], addons: [] },
+    { id: 'mid-200',         label: 'Mid-market 200',      licenses: 200, guests: 0, apps: ['newsfeed', 'chat', 'library', 'office', 'meetings', 'projects'], addons: ['videoconf'] },
+    { id: 'hola-80',         label: 'Holaspirit-first 80', licenses: 80,  guests: 0, apps: ['structure', 'meetings', 'okr'], addons: ['holacracy'] },
+    { id: 'ts-complet-150',  label: 'Talkspirit complet 150', licenses: 150, guests: 0, apps: ['newsfeed', 'chat', 'library', 'office', 'structure', 'meetings', 'projects', 'okr'], addons: ['videoconf', 'homepage'] }
+  ]
+};
+
+// ============================================================================
+// I18N
+// ============================================================================
+const I18N = {
+  fr: {
+    freq_annual:'Annuel', freq_monthly:'Mensuel', btn_pdf:'Télécharger PDF',
+    brand_sub:'Simulateur de prix',
+    auth_title:'Simulateur de prix', auth_sub:'Accès réservé aux équipes Talkspirit',
+    auth_label:'Mot de passe', auth_placeholder:'••••••••••••',
+    auth_btn:'Accéder au simulateur', auth_error:'Mot de passe incorrect. Réessayez.',
+    auth_footer:'Talkspirit · Usage interne',
+    s1_kicker:'Votre équipe',
+    s1_h2:`Combien d\'utilisateurs aurez-vous sur <em class="accent">Talkspirit</em> ?`,
+    s1_desc:`Le plan s\'ajuste automatiquement selon le nombre de personnes. Vous pouvez forcer un autre choix si besoin.`,
+    s1_licenses_label:'Licences membres',
+    s1_licenses_hint:'De 1 à 14 000 personnes. Au-delà : tarif sur devis.',
+    s1_guests_label:'Guests / membres inactifs',
+    s1_guests_tip:'Utilisateurs externes ou inactifs avec accès limité. Facturés par tranches de 100. Inclus illimité sur Enterprise.',
+    s1_guests_price:'49 € la tranche de 100',
+    s2_kicker:'Vos modules',
+    s2_h2:'Chaque module est <em class="accent">autonome</em>. Vous payez ce que vous activez.',
+    s2_desc:`Cliquez un module pour voir ce qu\'il fait, ce qu\'il inclut sans surcoût, et son prix.`,
+    s3_kicker:'Vos add-ons',
+    s3_h2:'Les <em class="accent">briques optionnelles</em> qui complètent.',
+    s3_desc:`Cochez ce dont vous avez besoin. Tout est désactivable, le prix s\'adapte instantanément.`,
+    s4_kicker:'Votre situation',
+    s4_h2:'Avez-vous droit à <em class="accent">une remise</em> ?',
+    s4_desc:`Une seule case à cocher si vous êtes éligible. Le tarif s\'ajuste sur toutes les lignes.`,
+    s5_kicker:'Votre coût Talkspirit',
+    s5_h2:'Voici, <em class="accent">en clair</em>, ce que vous payez.',
+    s5_desc:'Le récap complet de votre configuration. Imprimable et partageable.',
+    s5_indicative:'Cette simulation est indicative. Tarif final à confirmer avec votre interlocuteur Talkspirit.',
+    price_ht:'Prix hors taxes (HT)',
+    hola_warning:`<strong>Sans Structure, vous perdez le cœur d\'Holaspirit.</strong> Rôles, cercles, agreements, gouvernance — tous reposent sur Structure.`,
+    hola_activate:'Activer Structure',
+    ngo_label:'Association ou Établissement éducatif',
+    ngo_desc:'Si votre organisation est une association à but non lucratif ou un établissement éducatif, bénéficiez automatiquement de <strong style="color:var(--brand-700)">−50 % sur toutes les lignes</strong>.',
+    commercial_mode_on:'✦ Activer le mode commercial', commercial_mode_off:'✕ Masquer le mode commercial',
+    discount_global_kicker:'Mode commercial · Remises globales', discount_global_title:'Remises commerciales',
+    discount_global_desc:'Cumulables. Chaque remise apparaît comme une ligne dans le récap.',
+    discount_add:'+ Ajouter',
+    discount_targeted_kicker:'Mode commercial · Remises ciblées',
+    discount_targeted_title:'Remises sur des modules ou add-ons spécifiques',
+    discount_targeted_desc:'Activez une remise sur une ligne précise du devis. Cumulable avec la remise globale.',
+    discount_label_placeholder:'Libellé (ex : Remise lancement)',
+    first_year:'1ʳᵉ année uniquement',
+    discount_empty:'Aucune remise ajoutée. Cliquez sur "+ Ajouter" pour créer une remise.',
+    perline_empty:'Activez au moins un module ou add-on pour pouvoir lui appliquer une remise.',
+    recap_label:'Ce que vous activez', recap_qty:'Qté', recap_unit:'P.U.', recap_discount:'Remise', recap_subtotal:'Sous-total',
+    total_monthly:'TOTAL MENSUEL HT', total_annual:'TOTAL ANNUEL HT', subtotal_after:'Sous-total après remises',
+    btn_download_pdf:'Télécharger en PDF', btn_reset:'Réinitialiser',
+    activate_addon:'Activer cet add-on', activated:'Activé', quote_required:'Tarif sur devis',
+    included_free:'Inclus sans surcoût', plan_on:'Tarif sur le plan',
+    licences_label:'licences', requires_structure:'Nécessite Structure activé pour fonctionner.', requires_structure_btn:'Activer Structure d\'abord',
+    no_module_warning:'Activez au moins un module pour finaliser votre simulation. Les add-ons seuls ne peuvent pas être validés.',
+    flag_enterprise:'✦ Plan Enterprise. Tarif final à confirmer avec votre interlocuteur Talkspirit.',
+    flag_custom_price:'Certaines lignes sont en tarif sur devis et ne sont pas comptabilisées dans le total.',
+    flag_gaps:'À confirmer avec Talkspirit :',
+    footer_tagline:'Talkspirit · La plateforme tout-en-un',
+    footer_note:'Simulation indicative — les tarifs définitifs sont confirmés par votre interlocuteur commercial Talkspirit avant signature.',
+    chat_title:'Assistant Talkspirit', chat_subtitle:'Modifiez votre simulation en langage naturel',
+    chat_placeholder:'Ex : "200 licences", "active Structure"…', chat_send:'Envoyer',
+    chat_unknown:`Je n\'ai pas compris. Essayez : <strong>"200 licences"</strong>, <strong>"active Structure"</strong>, <strong>"remise 15 %"</strong>.`,
+    q_title:'Simulation de prix', q_ref_prefix:'Réf.',
+    q_meta_plan:'Plan', q_meta_users:'Utilisateurs', q_meta_billing:'Facturation', q_meta_modules:'Modules actifs',
+    q_section:'Détail de la simulation',
+    q_col_label:'Désignation', q_col_qty:'Qté', q_col_unit:'P.U.', q_col_discount:'Remise', q_col_subtotal:'Sous-total',
+    q_subtotal:'Sous-total après remises',
+    q_total_monthly:'TOTAL MENSUEL HT', q_total_annual:'TOTAL ANNUEL HT',
+    q_footer_note:'Document non contractuel — simulation générée le',
+    q_contact:'Pour toute question :', q_users_label:'membres', q_guests_label:'guests', q_modules_label:'sélectionnés',
+    q_ngo_note:'✓ Remise NGO/Éducation −50 % appliquée sur toutes les lignes.',
+    q_enterprise_note:'⚠ Plan Enterprise : tarif indicatif, à confirmer avec votre interlocuteur Talkspirit.',
+    storage_unit:'To supplémentaires', storage_active:'To activés',
+  },
+  en: {
+    freq_annual:'Annual', freq_monthly:'Monthly', btn_pdf:'Download PDF',
+    brand_sub:'Pricing Simulator',
+    auth_title:'Pricing Simulator', auth_sub:'Restricted access — Talkspirit team',
+    auth_label:'Password', auth_placeholder:'••••••••••••',
+    auth_btn:'Access the simulator', auth_error:'Incorrect password. Please try again.',
+    auth_footer:'Talkspirit · Internal use',
+    s1_kicker:'Your team',
+    s1_h2:'How many users will you have on <em class="accent">Talkspirit</em>?',
+    s1_desc:'The plan adjusts automatically based on the number of people. You can override the suggestion if needed.',
+    s1_licenses_label:'Member licences',
+    s1_licenses_hint:'From 1 to 14,000 people. Beyond that: quote on request.',
+    s1_guests_label:'Guests / inactive members',
+    s1_guests_tip:'External or inactive users with limited access. Billed in blocks of 100. Unlimited on Enterprise.',
+    s1_guests_price:'€49 per block of 100',
+    s2_kicker:'Your modules',
+    s2_h2:'Each module is <em class="accent">independent</em>. You pay for what you activate.',
+    s2_desc:'Click a module to see what it does, what it includes at no extra cost, and its price.',
+    s3_kicker:'Your add-ons',
+    s3_h2:'The <em class="accent">optional building blocks</em> that complete your setup.',
+    s3_desc:'Toggle what you need. Everything is deactivatable — the price updates instantly.',
+    s4_kicker:'Your discounts',
+    s4_h2:'Are you eligible for <em class="accent">a discount</em>?',
+    s4_desc:'One checkbox if you qualify. The rate adjusts across all lines.',
+    s5_kicker:'Your Talkspirit cost',
+    s5_h2:'Here, <em class="accent">clearly</em>, is what you pay.',
+    s5_desc:'Full summary of your configuration. Printable and shareable.',
+    s5_indicative:'This simulation is indicative. Final pricing to be confirmed with your Talkspirit contact.',
+    price_ht:'All prices excl. VAT',
+    hola_warning:'<strong>Without Structure, you lose the core of Holaspirit.</strong> Roles, circles, agreements, governance — all rely on Structure.',
+    hola_activate:'Activate Structure',
+    ngo_label:'NGO or Educational institution',
+    ngo_desc:'If your organisation is a non-profit or an educational institution, automatically get <strong style="color:var(--brand-700)">−50% on all lines</strong>.',
+    commercial_mode_on:'✦ Enable commercial mode', commercial_mode_off:'✕ Hide commercial mode',
+    discount_global_kicker:'Commercial mode · Global discounts', discount_global_title:'Commercial discounts',
+    discount_global_desc:'Stackable. Each discount appears as a line in the summary.',
+    discount_add:'+ Add',
+    discount_targeted_kicker:'Commercial mode · Targeted discounts',
+    discount_targeted_title:'Discounts on specific modules or add-ons',
+    discount_targeted_desc:'Apply a discount to a specific line. Stackable with global discounts.',
+    discount_label_placeholder:'Label (e.g. Launch discount)',
+    first_year:'1st year only',
+    discount_empty:'No discount added. Click "+ Add" to create a discount.',
+    perline_empty:'Activate at least one module or add-on to apply a discount to it.',
+    recap_label:'What you activate', recap_qty:'Qty', recap_unit:'Unit price', recap_discount:'Discount', recap_subtotal:'Subtotal',
+    total_monthly:'MONTHLY TOTAL (EXCL. VAT)', total_annual:'ANNUAL TOTAL (EXCL. VAT)', subtotal_after:'Subtotal after discounts',
+    btn_download_pdf:'Download as PDF', btn_reset:'Reset',
+    activate_addon:'Activate this add-on', activated:'Activated', quote_required:'Custom quote',
+    included_free:'Included at no extra cost', plan_on:'Rate on plan',
+    licences_label:'licences', requires_structure:'Requires Structure activated to work.', requires_structure_btn:'Activate Structure first',
+    no_module_warning:'Activate at least one module to finalize your simulation. Add-ons alone cannot be validated.',
+    flag_enterprise:'✦ Enterprise plan. Final pricing to be confirmed with your Talkspirit contact.',
+    flag_custom_price:'Some lines are quoted separately and are not included in the total.',
+    flag_gaps:'To confirm with Talkspirit:',
+    footer_tagline:'Talkspirit · The all-in-one platform',
+    footer_note:'Indicative simulation — final pricing confirmed by your Talkspirit sales contact before signing.',
+    chat_title:'Talkspirit Assistant', chat_subtitle:'Edit your simulation in plain language',
+    chat_placeholder:'E.g. "200 licences", "activate Structure"…', chat_send:'Send',
+    chat_unknown:`I didn\'t understand. Try: <strong>"200 licences"</strong>, <strong>"activate Structure"</strong>, <strong>"15% discount"</strong>.`,
+    q_title:'Price simulation', q_ref_prefix:'Ref.',
+    q_meta_plan:'Plan', q_meta_users:'Users', q_meta_billing:'Billing', q_meta_modules:'Active modules',
+    q_section:'Simulation details',
+    q_col_label:'Description', q_col_qty:'Qty', q_col_unit:'Unit price', q_col_discount:'Discount', q_col_subtotal:'Subtotal',
+    q_subtotal:'Subtotal after discounts',
+    q_total_monthly:'MONTHLY TOTAL (EXCL. VAT)', q_total_annual:'ANNUAL TOTAL (EXCL. VAT)',
+    q_footer_note:'Non-contractual document — simulation generated on',
+    q_contact:'For any questions:', q_users_label:'members', q_guests_label:'guests', q_modules_label:'selected',
+    q_ngo_note:'✓ NGO/Education discount −50% applied to all lines.',
+    q_enterprise_note:'⚠ Enterprise plan: indicative pricing, to be confirmed with your Talkspirit contact.',
+    storage_unit:'additional TB', storage_active:'TB activated',
+  },
+  de: {
+    freq_annual:'Jährlich', freq_monthly:'Monatlich', btn_pdf:'PDF herunterladen',
+    brand_sub:'Preissimulator',
+    auth_title:'Preissimulator', auth_sub:'Zugang nur für das Talkspirit-Team',
+    auth_label:'Passwort', auth_placeholder:'••••••••••••',
+    auth_btn:'Zum Simulator', auth_error:'Falsches Passwort. Bitte erneut versuchen.',
+    auth_footer:'Talkspirit · Interner Gebrauch',
+    s1_kicker:'Ihr Team',
+    s1_h2:'Wie viele Nutzer werden Sie auf <em class="accent">Talkspirit</em> haben?',
+    s1_desc:'Der Plan passt sich automatisch an die Personenanzahl an. Sie können die Auswahl bei Bedarf manuell ändern.',
+    s1_licenses_label:'Mitglieder-Lizenzen',
+    s1_licenses_hint:'Von 1 bis 14.000 Personen. Darüber hinaus: Preis auf Anfrage.',
+    s1_guests_label:'Gäste / inaktive Mitglieder',
+    s1_guests_tip:'Externe oder inaktive Nutzer mit eingeschränktem Zugang. Abgerechnet in 100er-Blöcken. Bei Enterprise inklusive.',
+    s1_guests_price:'49 € pro 100er-Block',
+    s2_kicker:'Ihre Module',
+    s2_h2:'Jedes Modul ist <em class="accent">eigenständig</em>. Sie zahlen nur, was Sie aktivieren.',
+    s2_desc:'Klicken Sie auf ein Modul, um zu sehen, was es leistet, was es enthält und was es kostet.',
+    s3_kicker:'Ihre Add-ons',
+    s3_h2:'Die <em class="accent">optionalen Bausteine</em>, die Ihr Setup vervollständigen.',
+    s3_desc:'Aktivieren Sie, was Sie brauchen. Alles ist deaktivierbar — der Preis passt sich sofort an.',
+    s4_kicker:'Ihre Rabatte',
+    s4_h2:'Haben Sie Anspruch auf <em class="accent">einen Rabatt</em>?',
+    s4_desc:'Ein Häkchen, wenn Sie berechtigt sind. Der Tarif passt sich auf allen Positionen an.',
+    s5_kicker:'Ihre Talkspirit-Kosten',
+    s5_h2:'Hier, <em class="accent">transparent</em>, was Sie zahlen.',
+    s5_desc:'Vollständige Übersicht Ihrer Konfiguration. Druckbar und teilbar.',
+    s5_indicative:'Diese Simulation ist unverbindlich. Endpreise werden mit Ihrem Talkspirit-Ansprechpartner bestätigt.',
+    price_ht:'Alle Preise zzgl. MwSt.',
+    hola_warning:'<strong>Ohne Structure verlieren Sie das Kernstück von Holaspirit.</strong> Rollen, Kreise, Vereinbarungen, Governance — alles basiert auf Structure.',
+    hola_activate:'Structure aktivieren',
+    ngo_label:'NGO oder Bildungseinrichtung',
+    ngo_desc:'Wenn Ihre Organisation eine gemeinnützige oder Bildungseinrichtung ist, erhalten Sie automatisch <strong style="color:var(--brand-700)">−50 % auf alle Positionen</strong>.',
+    commercial_mode_on:'✦ Verkaufsmodus aktivieren', commercial_mode_off:'✕ Verkaufsmodus ausblenden',
+    discount_global_kicker:'Verkaufsmodus · Globale Rabatte', discount_global_title:'Handelsrabatte',
+    discount_global_desc:'Kumulierbar. Jeder Rabatt erscheint als eigene Zeile in der Übersicht.',
+    discount_add:'+ Hinzufügen',
+    discount_targeted_kicker:'Verkaufsmodus · Gezielte Rabatte',
+    discount_targeted_title:'Rabatte auf bestimmte Module oder Add-ons',
+    discount_targeted_desc:'Rabatt auf eine bestimmte Position anwenden. Kumulierbar mit globalen Rabatten.',
+    discount_label_placeholder:'Bezeichnung (z.B. Einführungsrabatt)',
+    first_year:'Nur im 1. Jahr',
+    discount_empty:'Kein Rabatt hinzugefügt. Klicken Sie auf "+ Hinzufügen".',
+    perline_empty:'Aktivieren Sie mindestens ein Modul oder Add-on, um einen Rabatt anzuwenden.',
+    recap_label:'Was Sie aktivieren', recap_qty:'Menge', recap_unit:'EP', recap_discount:'Rabatt', recap_subtotal:'Zwischensumme',
+    total_monthly:'MONATLICH GESAMT (zzgl. MwSt.)', total_annual:'JÄHRLICH GESAMT (zzgl. MwSt.)', subtotal_after:'Zwischensumme nach Rabatten',
+    btn_download_pdf:'Als PDF herunterladen', btn_reset:'Zurücksetzen',
+    activate_addon:'Add-on aktivieren', activated:'Aktiviert', quote_required:'Preis auf Anfrage',
+    included_free:'Inklusive ohne Aufpreis', plan_on:'Tarif im Plan',
+    licences_label:'Lizenzen', requires_structure:'Erfordert aktiviertes Structure-Modul.', requires_structure_btn:'Zuerst Structure aktivieren',
+    no_module_warning:'Aktivieren Sie mindestens ein Modul, um Ihre Simulation abzuschließen. Add-ons allein können nicht validiert werden.',
+    flag_enterprise:'✦ Enterprise-Plan. Endpreis in Abstimmung mit Ihrem Talkspirit-Ansprechpartner.',
+    flag_custom_price:'Einige Positionen werden separat angeboten und sind nicht im Gesamtbetrag enthalten.',
+    flag_gaps:'Mit Talkspirit zu bestätigen:',
+    footer_tagline:'Talkspirit · Die All-in-One-Plattform',
+    footer_note:'Unverbindliche Simulation — Endpreise werden von Ihrem Talkspirit-Vertriebsansprechpartner vor Vertragsabschluss bestätigt.',
+    chat_title:'Talkspirit-Assistent', chat_subtitle:'Simulation in natürlicher Sprache bearbeiten',
+    chat_placeholder:'z.B. "200 Lizenzen", "Structure aktivieren"…', chat_send:'Senden',
+    chat_unknown:'Nicht verstanden. Versuchen Sie: <strong>"200 Lizenzen"</strong>, <strong>"Structure aktivieren"</strong>, <strong>"15 % Rabatt"</strong>.',
+    q_title:'Preissimulation', q_ref_prefix:'Ref.',
+    q_meta_plan:'Plan', q_meta_users:'Nutzer', q_meta_billing:'Abrechnung', q_meta_modules:'Aktive Module',
+    q_section:'Simulationsdetails',
+    q_col_label:'Bezeichnung', q_col_qty:'Menge', q_col_unit:'EP', q_col_discount:'Rabatt', q_col_subtotal:'Zwischensumme',
+    q_subtotal:'Zwischensumme nach Rabatten',
+    q_total_monthly:'MONATLICH GESAMT (zzgl. MwSt.)', q_total_annual:'JÄHRLICH GESAMT (zzgl. MwSt.)',
+    q_footer_note:'Unverbindliches Dokument — Simulation erstellt am',
+    q_contact:'Bei Fragen:', q_users_label:'Mitglieder', q_guests_label:'Gäste', q_modules_label:'ausgewählt',
+    q_ngo_note:'✓ NGO/Bildungsrabatt −50 % auf alle Positionen angewendet.',
+    q_enterprise_note:'⚠ Enterprise-Plan: unverbindlicher Preis, in Abstimmung mit Ihrem Talkspirit-Ansprechpartner.',
+    storage_unit:'zusätzliche TB', storage_active:'TB aktiviert',
+  }
+};
+
+const MODULE_I18N = {
+  newsfeed: {
+    fr: { title:`Fédérer toute l\'organisation autour d\'une information vivante`, bullets:[`Publications structurées, sondages, checklists et workflows pour diffuser l\'information vers tous.`,`Groupes thématiques, galerie média et statistiques d\'engagement intégrés.`,'Intelligence artificielle embarquée pour rédiger, résumer et traduire les contenus.'] },
+    en: { title:'Unite the entire organisation around living information', bullets:['Structured posts, polls, checklists and workflows to broadcast information to everyone.','Topic groups, media gallery and built-in engagement analytics.','Embedded AI to draft, summarise and translate content.'] },
+    de: { title:'Die gesamte Organisation um lebendige Informationen vereinen', bullets:['Strukturierte Beiträge, Umfragen, Checklisten und Workflows zur internen Kommunikation.','Themengruppen, Mediengalerie und integrierte Engagement-Statistiken.','Eingebettete KI zum Verfassen, Zusammenfassen und Übersetzen von Inhalten.'] }
+  },
+  chat: {
+    fr: { title:'La messagerie instantanée de votre organisation', bullets:['Canaux thématiques, fils de discussion et messages directs en un seul endroit.','Réactions, mentions, partage de fichiers et historique de recherche illimité.','Notifications intelligentes — aucun bruit parasite, aucun message perdu.'] },
+    en: { title:`Your organisation\'s instant messaging`, bullets:['Topic channels, threads and direct messages all in one place.','Reactions, mentions, file sharing and unlimited search history.','Smart notifications — no noise, no missed messages.'] },
+    de: { title:'Der Instant-Messenger Ihrer Organisation', bullets:['Themenkanäle, Threads und Direktnachrichten an einem Ort.','Reaktionen, Erwähnungen, Dateifreigabe und unbegrenzte Suchhistorie.','Intelligente Benachrichtigungen — kein Rauschen, keine verpassten Nachrichten.'] }
+  },
+  library: {
+    fr: { title:'La base de connaissance unique de votre organisation', bullets:[`Pages structurées, wikis et espaces documentaires accessibles à toute l\'équipe.`,`Contrôle de version, historique des modifications et droits d\'accès granulaires.`,`Recherche full-text instantanée sur l\'ensemble du contenu.`] },
+    en: { title:`Your organisation\'s single knowledge base`, bullets:['Structured pages, wikis and document spaces accessible to the whole team.','Version control, edit history and granular access rights.','Instant full-text search across all content.'] },
+    de: { title:'Die zentrale Wissensdatenbank Ihrer Organisation', bullets:['Strukturierte Seiten, Wikis und Dokumenträume für das gesamte Team.','Versionskontrolle, Bearbeitungshistorie und granulare Zugriffsrechte.','Sofortige Volltextsuche über alle Inhalte.'] }
+  },
+  office: {
+    fr: { title:'La suite bureautique collaborative, incluse', bullets:['Documents, tableurs et présentations en ligne, sans quitter Talkspirit.','Édition simultanée à plusieurs en temps réel.','Compatible avec les formats Microsoft Office et OpenDocument.'] },
+    en: { title:'The collaborative office suite, included', bullets:['Documents, spreadsheets and presentations online, without leaving Talkspirit.','Real-time simultaneous multi-user editing.','Compatible with Microsoft Office and OpenDocument formats.'] },
+    de: { title:'Die kollaborative Office-Suite, inklusive', bullets:['Dokumente, Tabellen und Präsentationen online, ohne Talkspirit zu verlassen.','Gleichzeitige Echtzeit-Bearbeitung durch mehrere Nutzer.','Kompatibel mit Microsoft Office- und OpenDocument-Formaten.'] }
+  },
+  structure: {
+    fr: { title:'La clarté organisationnelle par les rôles et les cercles', bullets:[`Rôles et responsabilités explicites pour chaque personne dans l\'organisation.`,'Cercles imbriqués, agreements et gouvernance Holacracy ou personnalisée.',`Organigramme dynamique, champs personnalisés et exports pour l\'audit.`] },
+    en: { title:'Organisational clarity through roles and circles', bullets:['Explicit roles and responsibilities for every person in the organisation.','Nested circles, agreements and Holacracy or custom governance.','Dynamic org chart, custom fields and exports for auditing.'] },
+    de: { title:'Organisationsklarheit durch Rollen und Kreise', bullets:['Explizite Rollen und Verantwortlichkeiten für jeden in der Organisation.','Verschachtelte Kreise, Vereinbarungen und Holacracy- oder individuelle Governance.','Dynamisches Organigramm, benutzerdefinierte Felder und Exporte für Audits.'] }
+  },
+  meetings: {
+    fr: { title:'Des réunions efficaces, pilotées par la gouvernance', bullets:['Ordres du jour structurés, rôles de réunion et compte-rendus automatiques.','Intégration native avec Structure pour ancrer les décisions dans la gouvernance.','Suivi des actions post-réunion avec assignation et notifications.'] },
+    en: { title:'Effective meetings, driven by governance', bullets:['Structured agendas, meeting roles and automatic minutes.','Native integration with Structure to anchor decisions in governance.','Post-meeting action tracking with assignment and notifications.'] },
+    de: { title:'Effektive Meetings, gesteuert durch Governance', bullets:['Strukturierte Tagesordnungen, Besprechungsrollen und automatische Protokolle.','Native Integration mit Structure zur Verankerung von Entscheidungen in der Governance.','Nachverfolgung von Meeting-Maßnahmen mit Zuweisung und Benachrichtigungen.'] }
+  },
+  projects: {
+    fr: { title:'Le pilotage de projets pour les équipes agiles', bullets:['Tableaux Kanban, listes de tâches et vue calendrier sur tous vos projets.',`Sous-tâches, dépendances, priorités et dates d\'échéance au même endroit.`,`Rapports d\'avancement et tableau de bord pour les managers.`] },
+    en: { title:'Project management for agile teams', bullets:['Kanban boards, task lists and calendar view across all your projects.','Subtasks, dependencies, priorities and due dates in one place.','Progress reports and dashboard for managers.'] },
+    de: { title:'Projektsteuerung für agile Teams', bullets:['Kanban-Boards, Aufgabenlisten und Kalenderansicht für alle Projekte.','Unteraufgaben, Abhängigkeiten, Prioritäten und Fälligkeitsdaten an einem Ort.','Fortschrittsberichte und Dashboard für Manager.'] }
+  },
+  okr: {
+    fr: { title:`Aligner les objectifs de l\'organisation à l\'individu`, bullets:['OKR définis au niveau organisation, cercle et individu avec cascade automatique.','Tableaux de bord de progression et check-ins réguliers intégrés.','Intégration native avec Structure pour ancrer les OKR dans la gouvernance.'] },
+    en: { title:'Align objectives from organisation to individual', bullets:['OKRs defined at organisation, circle and individual level with automatic cascade.','Progress dashboards and regular built-in check-ins.','Native integration with Structure to anchor OKRs in governance.'] },
+    de: { title:'Ziele von der Organisation bis zum Individuum ausrichten', bullets:['OKRs auf Organisations-, Kreis- und Individualebene mit automatischer Kaskade.','Fortschritts-Dashboards und regelmäßige integrierte Check-ins.','Native Integration mit Structure zur Verankerung von OKRs in der Governance.'] }
+  },
+  videoconf: {
+    fr: { title:'La visioconférence intégrée à votre espace de travail', bullets:['Réunions vidéo HD sans installation, directement depuis Talkspirit.',`Partage d\'écran, enregistrement et salle d\'attente inclus.`,`Jusqu\'à 100 participants simultanés selon le plan.`] },
+    en: { title:'Video conferencing integrated into your workspace', bullets:['HD video meetings with no install, directly from Talkspirit.','Screen sharing, recording and waiting room included.','Up to 100 simultaneous participants depending on the plan.'] },
+    de: { title:'Videokonferenzen in Ihren Arbeitsbereich integriert', bullets:['HD-Videomeetings ohne Installation, direkt aus Talkspirit.','Bildschirmfreigabe, Aufzeichnung und Warteraum inklusive.','Bis zu 100 gleichzeitige Teilnehmer je nach Plan.'] }
+  },
+  homepage: {
+    fr: { title:`Un portail d\'entrée brandé pour toute l\'organisation`, bullets:[`Page d\'accueil personnalisable avec widgets, liens et publications épinglées.`,'Expérience unifiée pour les collaborateurs à la première connexion.',`Identité visuelle de l\'organisation appliquée sur l\'ensemble de la plateforme.`] },
+    en: { title:'A branded entry portal for the entire organisation', bullets:['Customisable homepage with widgets, links and pinned posts.','Unified experience for employees on first login.',`Organisation\'s visual identity applied across the entire platform.`] },
+    de: { title:'Ein gebrandetes Eingangsportal für die gesamte Organisation', bullets:['Anpassbare Startseite mit Widgets, Links und angehefteten Beiträgen.','Einheitliche Erfahrung für Mitarbeiter bei der ersten Anmeldung.','Visuelle Identität der Organisation auf der gesamten Plattform.'] }
+  },
+  livestream: {
+    fr: { title:'Diffusez en direct à toute votre organisation', bullets:['Streaming vidéo live pour les all-hands, événements et annonces importantes.','Chat en temps réel et réactions du public pendant la diffusion.',`Replay disponible après l\'événement.`] },
+    en: { title:'Stream live to your entire organisation', bullets:['Live video streaming for all-hands, events and important announcements.','Real-time chat and audience reactions during the stream.','Replay available after the event.'] },
+    de: { title:'Live-Streaming für Ihre gesamte Organisation', bullets:['Live-Video-Streaming für All-Hands, Events und wichtige Ankündigungen.','Echtzeit-Chat und Publikumsreaktionen während der Übertragung.','Replay nach der Veranstaltung verfügbar.'] }
+  },
+  bot: {
+    fr: { title:'Automatisez avec des bots personnalisés', bullets:['Bots configurables pour automatiser les notifications, rappels et flux de travail.','Intégrations avec vos outils externes via webhooks et API.','Aucune compétence en code requise pour les automatisations courantes.'] },
+    en: { title:'Automate with custom bots', bullets:['Configurable bots to automate notifications, reminders and workflows.','Integrations with your external tools via webhooks and API.','No coding skills required for common automations.'] },
+    de: { title:'Mit benutzerdefinierten Bots automatisieren', bullets:['Konfigurierbare Bots zur Automatisierung von Benachrichtigungen, Erinnerungen und Workflows.','Integrationen mit Ihren externen Tools über Webhooks und API.','Keine Programmierkenntnisse für gängige Automatisierungen erforderlich.'] }
+  },
+  timespent: {
+    fr: { title:'Le suivi du temps passé par rôle et projet', bullets:['Saisie du temps par collaborateur, rôle ou projet en quelques clics.',`Rapports exportables pour la facturation client ou l\'analyse d\'activité.`,'Intégration native avec Structure pour le suivi par rôle Holaspirit.'] },
+    en: { title:'Time tracking by role and project', bullets:['Time entry per employee, role or project in a few clicks.','Exportable reports for client billing or activity analysis.','Native integration with Structure for Holaspirit role-based tracking.'] },
+    de: { title:'Zeiterfassung nach Rolle und Projekt', bullets:['Zeiterfassung pro Mitarbeiter, Rolle oder Projekt in wenigen Klicks.','Exportierbare Berichte für Kundenabrechnung oder Aktivitätsanalyse.','Native Integration mit Structure für rollenbasiertes Holaspirit-Tracking.'] }
+  },
+  translation_2: {
+    fr: { title:'Traduction automatique 1–2 langues', bullets:['Traduction instantanée des messages et publications dans 1 ou 2 langues cibles.','Idéal pour les équipes bilingues ou les filiales internationales.','Activer ou désactiver par utilisateur selon les besoins.'] },
+    en: { title:'Automatic translation — 1–2 languages', bullets:['Instant translation of messages and posts into 1 or 2 target languages.','Ideal for bilingual teams or international subsidiaries.','Enable or disable per user as needed.'] },
+    de: { title:'Automatische Übersetzung — 1–2 Sprachen', bullets:['Sofortige Übersetzung von Nachrichten und Beiträgen in 1 oder 2 Zielsprachen.','Ideal für zweisprachige Teams oder internationale Niederlassungen.','Pro Nutzer nach Bedarf aktivierbar oder deaktivierbar.'] }
+  },
+  translation_unlimited: {
+    fr: { title:'Traduction automatique 3 langues et plus', bullets:['Traduction en temps réel vers toutes les langues supportées.','Parfait pour les organisations véritablement multilingues et globales.',`Chaque collaborateur lit le contenu dans sa langue, l\'auteur écrit dans la sienne.`] },
+    en: { title:'Automatic translation — 3+ languages', bullets:['Real-time translation into all supported languages.','Perfect for truly multilingual and global organisations.','Each employee reads in their language, the author writes in theirs.'] },
+    de: { title:'Automatische Übersetzung — 3+ Sprachen', bullets:['Echtzeit-Übersetzung in alle unterstützten Sprachen.','Perfekt für wirklich mehrsprachige und globale Organisationen.','Jeder Mitarbeiter liest in seiner Sprache, der Autor schreibt in seiner.'] }
+  },
+  holacracy: {
+    fr: { title:'La gouvernance Holacracy native', bullets:['Implémentation complète du système de gouvernance Holacracy dans Talkspirit.','Réunions de gouvernance, tensions et propositions structurées selon la constitution.','Accompagnement et ressources de formation inclus pour le démarrage.'] },
+    en: { title:'Native Holacracy governance', bullets:['Full implementation of the Holacracy governance system in Talkspirit.','Governance meetings, tensions and proposals structured per the constitution.','Onboarding support and training resources included.'] },
+    de: { title:'Native Holacracy-Governance', bullets:['Vollständige Implementierung des Holacracy-Governance-Systems in Talkspirit.','Governance-Meetings, Spannungen und Vorschläge gemäß der Verfassung.','Onboarding-Unterstützung und Schulungsressourcen inklusive.'] }
+  },
+  hds: {
+    fr: { title:'Hébergement de Données de Santé certifié', bullets:['Conformité HDS (Hébergeur de Données de Santé) selon la réglementation française.','Données hébergées en France, chiffrées et auditées.','Requis pour les établissements de santé, mutuelles et acteurs du secteur médical.'] },
+    en: { title:'Certified Health Data Hosting', bullets:['HDS compliance (Health Data Host) as per French regulation.','Data hosted in France, encrypted and audited.','Required for healthcare organisations, mutuals and medical sector players.'] },
+    de: { title:'Zertifiziertes Gesundheitsdaten-Hosting', bullets:['HDS-Konformität (Hébergeur de Données de Santé) gemäß französischer Regulierung.','In Frankreich gehostete, verschlüsselte und geprüfte Daten.','Erforderlich für Gesundheitseinrichtungen und Akteure im Gesundheitssektor.'] }
+  },
+  storage_extra: {
+    fr: { title:'Stockage supplémentaire', bullets:['Extension du stockage de fichiers au-delà du quota inclus dans votre plan.','Tarif par To (téraoctet) supplémentaire, applicable à tous les plans.','Idéal pour les équipes avec de nombreux médias, vidéos et documents lourds.'] },
+    en: { title:'Additional storage', bullets:['File storage extension beyond the quota included in your plan.','Rate per additional TB (terabyte), applicable to all plans.','Ideal for teams with many media files, videos and large documents.'] },
+    de: { title:'Zusätzlicher Speicher', bullets:['Erweiterung des Dateispeichers über das im Plan enthaltene Kontingent hinaus.','Preis pro zusätzlichem TB (Terabyte), für alle Pläne gültig.','Ideal für Teams mit vielen Mediendateien, Videos und großen Dokumenten.'] }
+  }
+};
+
+function t(key) {
+  return (I18N[state.lang] && I18N[state.lang][key]) || I18N.fr[key] || key;
+}
+function modT(id, field) {
+  const m = MODULE_I18N[id];
+  if (!m) return null;
+  return (m[state.lang] && m[state.lang][field]) || (m.fr && m.fr[field]) || null;
+}
+
+function applyLang() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    const val = t(key);
+    if (val) el.textContent = val;
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    const key = el.getAttribute('data-i18n-html');
+    const val = t(key);
+    if (val) el.innerHTML = val;
+  });
+  document.querySelectorAll('[data-i18n-tip]').forEach(el => {
+    const key = el.getAttribute('data-i18n-tip');
+    const val = t(key);
+    if (val) el.setAttribute('data-tip', val);
+  });
+  // Auth gate
+  const authTitle = document.querySelector('#auth-gate .auth-title');
+  if (authTitle) authTitle.textContent = t('auth_title');
+  const authSub = document.querySelector('#auth-gate .auth-sub');
+  if (authSub) authSub.textContent = t('auth_sub');
+  const authLabel = document.querySelector('#auth-gate .auth-field label');
+  if (authLabel) authLabel.textContent = t('auth_label');
+  const authInput = document.getElementById('auth-password-input');
+  if (authInput) authInput.placeholder = t('auth_placeholder');
+  const authBtn = document.querySelector('#auth-gate .auth-btn');
+  if (authBtn) authBtn.textContent = t('auth_btn');
+  const authFooter = document.querySelector('#auth-gate .auth-footer');
+  if (authFooter) authFooter.textContent = t('auth_footer');
+  // Chat
+  const chatTitle = document.querySelector('.chat-title');
+  if (chatTitle) chatTitle.innerHTML = '✦ ' + t('chat_title');
+  const chatSub = document.querySelector('.chat-subtitle');
+  if (chatSub) chatSub.textContent = t('chat_subtitle');
+  const chatInput = document.getElementById('chat-input');
+  if (chatInput) chatInput.placeholder = t('chat_placeholder');
+  const chatSend = document.getElementById('chat-send');
+  if (chatSend) chatSend.textContent = t('chat_send');
+  // Brand subtitle
+  const brandSub = document.querySelector('.brand-sub');
+  if (brandSub) brandSub.textContent = t('brand_sub');
+  // Lang toggle active state
+  document.querySelectorAll('#lang-toggle button').forEach(b => {
+    b.classList.toggle('active', b.dataset.lang === state.lang);
+  });
+  // page title
+  document.title = 'Talkspirit — ' + t('brand_sub');
+}
+
+// ============================================================================
+// STATE
+// ============================================================================
+const state = {
+  lang: 'fr',
+  frequency: 'annual',
+  licenses: 50,
+  guests: 0,
+  planForced: null,
+  apps: new Set(),
+  addons: new Set(),
+  storageTb: 0,
+  activeAppTab: 'newsfeed',
+  activeAddonTab: 'videoconf',
+  ngo: false,
+  commercialMode: false,
+  customDiscounts: [],   // [{ id, label, type, value, firstYearOnly }]
+  perLineDiscounts: {},  // { lineId: { enabled, type, value, firstYearOnly } }
+  chatOpen: false,
+  chatMessages: []
+};
+
+// ============================================================================
+// COMPUTE
+// ============================================================================
+function suggestPlan(licenses, guests) {
+  if (licenses > 300) return 'enterprise';
+  if (guests > licenses && guests > 100) return 'enterprise';
+  if (licenses > 100) return 'scale';
+  return 'rise';
+}
+
+function getCurrentPlan() {
+  return state.planForced || suggestPlan(state.licenses, state.guests);
+}
+
+function isPlanForcedInvalid(plan, licenses) {
+  if (plan === 'rise' && licenses > 100) return true;
+  if (plan === 'scale' && licenses > 300) return true;
+  return false;
+}
+
+function enterprisePrice(rates, licenses, freq) {
+  const ent = rates.enterprise;
+  if (!ent || ent.quote_required) return null;
+  const curve = freq === 'monthly' ? ent.monthly_per_user : ent.annual_per_user;
+  if (!curve) return null;
+  const thresholds = PRICING.enterprise_thresholds;
+  const maxT = thresholds[thresholds.length - 1];
+  const lic = Math.min(licenses, maxT);
+  let tier = thresholds[0];
+  for (const t of thresholds) { if (t <= lic) tier = t; }
+  return curve[String(tier)];
+}
+
+function enterpriseTierPrice(ent, licenses, freq) {
+  const curve = freq === 'monthly' ? ent.monthly_per_tier : ent.annual_per_tier;
+  if (!curve) return null;
+  const thresholds = PRICING.enterprise_thresholds;
+  const maxT = thresholds[thresholds.length - 1];
+  const lic = Math.min(licenses, maxT);
+  let tier = thresholds[0];
+  for (const t of thresholds) { if (t <= lic) tier = t; }
+  return curve[String(tier)];
+}
+
+function getAppPrice(app, plan, freq, licenses) {
+  if (plan === 'enterprise') return enterprisePrice(app.rates, licenses, freq);
+  const r = app.rates[plan];
+  if (!r) return null;
+  return r[freq];
+}
+
+function getAddonPrice(addon, plan, freq, licenses) {
+  const r = addon.rates[plan];
+  if (!r) return null;
+  if (r.quote_required) return null;
+  if (addon.pricing_mode === 'fixed') {
+    if (plan === 'enterprise' && (r.monthly_per_tier || r.annual_per_tier)) {
+      return enterpriseTierPrice(r, licenses, freq);
+    }
+    return r[freq];
+  }
+  if (addon.pricing_mode === 'per_user') {
+    if (plan === 'enterprise') return enterprisePrice(addon.rates, licenses, freq);
+    return r[freq];
+  }
+  if (addon.pricing_mode === 'per_tb') return r[freq === 'monthly' ? 'monthly_per_tb' : 'annual_per_tb'];
+  return null;
+}
+
+function holaSuffix(item) { return item.family === 'hola' ? ' (Holaspirit by Talkspirit)' : ''; }
+
+function computeTotal() {
+  const plan = getCurrentPlan();
+  const planCfg = PRICING.plans[plan];
+  const freq = state.frequency;
+  const lines = [];
+
+  // Upfront
+  lines.push({ id: 'upfront', label: 'Plan ' + planCfg.name, sublabel: planCfg.cap_label, family: null, qty: 1, unitPrice: planCfg.upfront[freq], discountPct: 0, subtotal: planCfg.upfront[freq] });
+
+  // Apps
+  for (const app of PRICING.apps) {
+    if (!state.apps.has(app.id)) continue;
+    const unit = getAppPrice(app, plan, freq, state.licenses);
+    const subtotal = unit == null ? 0 : unit * state.licenses;
+    let sublabel = null;
+    if (app.id === 'newsfeed') sublabel = 'Incluant : ' + app.auto_includes.slice(0, 6).join(', ') + ', …';
+    else if (app.id === 'structure') sublabel = 'Incluant : ' + app.auto_includes.slice(0, 5).join(', ') + ', …';
+    else if (app.id === 'office') sublabel = 'Incluant : ' + app.auto_includes.join(', ');
+    lines.push({
+      id: app.id, label: app.name + holaSuffix(app), sublabel, family: app.family,
+      qty: state.licenses, unitPrice: unit, discountPct: 0,
+      subtotal, note: unit == null ? 'Sur devis' : null, productGap: false
+    });
+  }
+
+  // Addons
+  for (const addon of PRICING.addons) {
+    if (addon.id === 'storage_extra') continue;
+    if (!state.addons.has(addon.id)) continue;
+    const unit = getAddonPrice(addon, plan, freq, state.licenses);
+    let qty = 1, subtotal = 0;
+    if (unit != null) {
+      if (addon.pricing_mode === 'per_user') { qty = state.licenses; subtotal = unit * state.licenses; }
+      else { subtotal = unit; }
+    }
+    lines.push({
+      id: addon.id, label: addon.name + holaSuffix(addon), sublabel: null, family: addon.family,
+      qty, unitPrice: unit, discountPct: 0,
+      subtotal, note: unit == null ? 'Sur devis' : null, productGap: !!addon.product_gap
+    });
+  }
+
+  // Storage
+  if (state.storageTb > 0) {
+    const addon = PRICING.addons.find(a => a.id === 'storage_extra');
+    const unit = getAddonPrice(addon, plan, freq, state.licenses);
+    lines.push({
+      id: 'storage_extra', label: addon.name, sublabel: state.storageTb + ' To supplémentaires',
+      family: addon.family, qty: state.storageTb, unitPrice: unit, discountPct: 0,
+      subtotal: unit * state.storageTb, note: null, productGap: !!addon.product_gap
+    });
+  }
+
+  // Guests
+  if (state.guests > 0 && plan !== 'enterprise') {
+    const tranches = Math.ceil(state.guests / 100);
+    const unit = PRICING.guests.rates[plan][freq === 'monthly' ? 'monthly_per_tranche' : 'annual_per_tranche'];
+    lines.push({
+      id: 'guests', label: 'Guests / Membres inactifs',
+      sublabel: state.guests + ' personnes · ' + tranches + ' tranche' + (tranches > 1 ? 's' : '') + ' de 100',
+      family: null, qty: tranches, unitPrice: unit, discountPct: 0,
+      subtotal: unit * tranches, productGap: true
+    });
+  } else if (state.guests > 0 && plan === 'enterprise') {
+    lines.push({
+      id: 'guests', label: 'Guests / Membres inactifs',
+      sublabel: state.guests + ' personnes · inclus sur Enterprise',
+      family: null, qty: state.guests, unitPrice: 0, discountPct: 0,
+      subtotal: 0, note: 'Inclus'
+    });
+  }
+
+  // Apply NGO 50% per line
+  if (state.ngo) {
+    for (const l of lines) {
+      if (l.unitPrice == null || l.unitPrice === 0) continue;
+      l.discountPct = 50;
+      l.subtotal = l.qty * l.unitPrice * 0.5;
+    }
+  }
+
+  // Apply per-line custom discounts (after NGO, multiplicative)
+  for (const l of lines) {
+    if (l.unitPrice == null || l.unitPrice === 0) continue;
+    const d = state.perLineDiscounts[l.id];
+    if (!d || !d.enabled || !d.value) continue;
+    const baseAfterNGO = l.qty * l.unitPrice * (1 - (l.discountPct || 0) / 100);
+    let discountAmount;
+    if (d.type === 'percent') {
+      discountAmount = baseAfterNGO * (d.value / 100);
+      l.extraDiscountLabel = '−' + d.value + ' %' + (d.firstYearOnly ? ' (1ʳᵉ année)' : '');
+    } else {
+      discountAmount = Math.min(d.value, baseAfterNGO);
+      l.extraDiscountLabel = '−' + formatPrice(d.value) + (d.firstYearOnly ? ' (1ʳᵉ année)' : '');
+    }
+    l.subtotal = baseAfterNGO - discountAmount;
+    l.extraDiscountAmount = discountAmount;
+  }
+
+  // Subtotal before global discount
+  const subtotalBeforeGlobal = lines.reduce((s, l) => s + (l.unitPrice == null ? 0 : l.subtotal), 0);
+
+  // Global custom discounts (array — cumulatives)
+  const globalDiscountLines = [];
+  let globalDiscountTotal = 0;
+  if (state.commercialMode) {
+    let runningBase = subtotalBeforeGlobal;
+    for (const d of state.customDiscounts) {
+      if (!d.value || d.value <= 0) continue;
+      let amount, label = d.label || 'Remise commerciale';
+      if (d.type === 'percent') {
+        amount = runningBase * (d.value / 100);
+        label += ' −' + d.value + ' %';
+      } else {
+        amount = Math.min(d.value, runningBase);
+        label += ' −' + formatPrice(d.value);
+      }
+      if (d.firstYearOnly) label += ' (1ʳᵉ année)';
+      globalDiscountLines.push({ label, amount });
+      globalDiscountTotal += amount;
+      runningBase -= amount;
+    }
+  }
+  // keep compat aliases used by renderRecap
+  const globalDiscountAmount = globalDiscountTotal;
+  const globalDiscountLabel = globalDiscountLines.length === 1 ? globalDiscountLines[0].label : null;
+
+  const total = subtotalBeforeGlobal - globalDiscountTotal;
+
+  const flags = {
+    plan, suggestedPlan: suggestPlan(state.licenses, state.guests),
+    nearCap: (plan === 'rise' && state.licenses >= 95 && state.licenses <= 100) || (plan === 'scale' && state.licenses >= 285 && state.licenses <= 300),
+    overCap: (plan === 'rise' && state.licenses > 100) || (plan === 'scale' && state.licenses > 300),
+    enterprise: plan === 'enterprise',
+    holaApps: [...state.apps].filter(id => { const a = PRICING.apps.find(x => x.id === id); return a && a.family === 'hola' && id !== 'structure'; }),
+    structureSelected: state.apps.has('structure'),
+    productGaps: lines.filter(l => l.productGap).map(l => l.id),
+    customPriceLines: lines.filter(l => l.unitPrice == null).map(l => l.id),
+    aboveMaxThreshold: plan === 'enterprise' && state.licenses > 14000,
+    noModuleSelected: state.apps.size === 0
+  };
+  flags.holaWithoutStructure = flags.holaApps.length > 0 && !flags.structureSelected;
+  flags.invalid = flags.noModuleSelected || flags.holaWithoutStructure;
+
+  return { plan, lines, subtotalBeforeGlobal, globalDiscountLines, globalDiscountAmount, globalDiscountLabel, total, flags };
+}
+
+// ============================================================================
+// FORMAT
+// ============================================================================
+function formatPrice(n, opts) {
+  opts = opts || {};
+  if (n == null) return '—';
+  const decimals = opts.forceDecimals ? 2 : (n % 1 === 0 ? 0 : 2);
+  return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: 2 }).format(n) + ' €';
+}
+
+function familyBadge(family) {
+  if (!family) return '';
+  const labels = { talk: 'Talk', hola: 'Hola', mixed: 'Talk + Hola' };
+  const cls = { talk: 'badge-talk', hola: 'badge-hola', mixed: 'badge-mixed' };
+  return '<span class="badge-family ' + cls[family] + '">' + labels[family] + '</span>';
+}
+
+const SPARK_SVG = '<svg class="spark-icon" width="14" height="14" viewBox="0 0 1080 1080" fill="none"><path d="M867.857 1072.29C842.143 1072.29 820.286 1063.29 802.286 1045.29C678.857 911.572 592.714 807.429 543.857 732.857L381.857 991.286C363.857 1022.14 334.286 1037.57 293.143 1037.57C246.857 1037.57 223.714 1015.71 223.714 972C223.714 964.286 226.286 950.143 231.429 929.571L424.286 624.857C318.857 648 222.429 690.429 135 752.143C104.143 767.572 81 775.286 65.5714 775.286C45 775.286 28.2857 768.857 15.4286 756C5.14285 740.572 0 721.286 0 698.143C0 672.429 15.4286 646.714 46.2857 621C167.143 543.857 277.714 491.143 378 462.857C360 439.714 333 389.572 297 312.429C261 235.286 230.143 182.571 204.429 154.286C199.286 138.857 196.714 122.143 196.714 104.143C196.714 81.0001 207 59.1429 227.571 38.5714C248.143 18.0001 271.286 7.71448 297 7.71448C338.143 7.71448 384.429 54.0001 435.857 146.571C456.429 182.571 478.286 225 501.429 273.857L563.143 393.429V397.286C648 261 707.143 158.143 740.571 88.7143C768.857 50.1429 801 30.8573 837 30.8573C883.286 30.8573 906.429 52.7144 906.429 96.4287C906.429 122.143 884.572 172.286 840.857 246.857L740.571 420.429C897.429 405 979.714 396 987.429 393.429C1049.14 393.429 1080 412.714 1080 451.286C1080 474.429 1071 497.572 1053 520.714C1035 541.286 1013.14 556.714 987.429 567C948.857 572.143 896.143 577.286 829.286 582.429L686.571 594C753.429 694.286 840.857 801 948.857 914.143C959.143 924.429 964.286 943.714 964.286 972C964.286 997.714 954 1020.86 933.429 1041.43C912.857 1062 891 1072.29 867.857 1072.29Z" fill="#F4621D"/></svg>';
+
+// ============================================================================
+// RENDER
+// ============================================================================
+function render() {
+  const c = computeTotal();
+  renderSticky(c);
+  renderPlanChips(c);
+  renderPlanBanner(c);
+  renderAppTabs();
+  renderAppDetail();
+  renderAddonTabs();
+  renderAddonDetail();
+  renderHolaWarning(c);
+  applyLang();
+  renderCustomDiscounts();
+  renderPerlineList();
+  renderRecap(c);
+  renderModulesCount();
+  const d = new Date();
+  const printDate = document.getElementById('print-date');
+  if (printDate) printDate.textContent = 'Édité le ' + d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function renderSticky(c) {
+  document.getElementById('sticky-total').textContent = formatPrice(c.total);
+  document.getElementById('sticky-unit').textContent = '/ ' + (state.frequency === 'monthly' ? t('freq_monthly') : t('freq_annual')).toLowerCase() + ' HT';
+  const planName = PRICING.plans[c.plan].name;
+  const appsCount = state.apps.size;
+  const addonsCount = state.addons.size + (state.storageTb > 0 ? 1 : 0);
+  let detail = 'Plan ' + planName + ' · ' + state.licenses + ' licence' + (state.licenses > 1 ? 's' : '');
+  if (appsCount > 0) detail += ' · ' + appsCount + ' module' + (appsCount > 1 ? 's' : '');
+  if (addonsCount > 0) detail += ' · ' + addonsCount + ' add-on' + (addonsCount > 1 ? 's' : '');
+  if (state.ngo) detail += ' · −50 % NGO/Éducation';
+  document.getElementById('sticky-detail').textContent = detail;
+  document.querySelectorAll('#freq-toggle button').forEach(b => b.classList.toggle('active', b.dataset.freq === state.frequency));
+}
+
+function renderPlanChips(c) {
+  const container = document.getElementById('plan-chips');
+  const suggested = suggestPlan(state.licenses, state.guests);
+  const plans = ['rise', 'scale', 'enterprise'];
+  container.innerHTML = plans.map(p => {
+    const cfg = PRICING.plans[p];
+    const isInvalid = isPlanForcedInvalid(p, state.licenses);
+    const isCurrent = c.plan === p;
+    const isSuggested = suggested === p && c.plan !== p;
+    const upfrontPrice = formatPrice(cfg.upfront[state.frequency]);
+    const cls = 'plan-chip ' + (isCurrent ? 'active' : '') + (isSuggested ? ' suggested' : '');
+    return '<button class="' + cls + '" data-plan="' + p + '" ' + (isInvalid ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : '') + '>' +
+      '<span class="plan-name">' + cfg.name + (isSuggested ? ' <span style="font-size:11px; color: var(--brand); font-weight:600;">(suggéré)</span>' : '') + '</span>' +
+      '<span class="plan-meta">' + cfg.cap_label + '</span>' +
+      '<span class="plan-price">' + upfrontPrice + ' upfront ' + (state.frequency === 'monthly' ? '/mois' : '/an') + '</span>' +
+      '</button>';
+  }).join('');
+  container.querySelectorAll('.plan-chip').forEach(el => {
+    if (el.disabled) return;
+    el.addEventListener('click', () => {
+      const p = el.dataset.plan;
+      state.planForced = (p === suggestPlan(state.licenses, state.guests)) ? null : p;
+      render();
+    });
+  });
+}
+
+function renderPlanBanner(c) {
+  const banner = document.getElementById('plan-banner');
+  let html = '', cls = 'banner banner-info';
+  if (c.flags.overCap) {
+    cls = 'banner banner-error';
+    html = '<div style="flex-shrink:0; font-size:20px;">✕</div><div><strong>Plan trop petit pour ' + state.licenses + ' licences.</strong> Le simulateur a basculé automatiquement.</div>';
+    state.planForced = null;
+  } else if (c.flags.aboveMaxThreshold) {
+    cls = 'banner banner-warn';
+    html = '<div style="flex-shrink:0; font-size:20px;">⚠</div><div><strong>Au-delà de 14 000 licences :</strong> la grille dégressive standard ne couvre pas votre volume. Tarif final sur devis.</div>';
+  } else if (c.flags.nearCap) {
+    cls = 'banner banner-warn';
+    const next = c.plan === 'rise' ? 'Scale' : 'Enterprise';
+    html = '<div style="flex-shrink:0; font-size:20px;">⚠</div><div><strong>Vous frôlez le plafond du plan ' + PRICING.plans[c.plan].name + '.</strong> Si vous prévoyez de grandir, ' + next + ' vous donne de la marge.</div>';
+  } else if (state.planForced && state.planForced !== c.flags.suggestedPlan) {
+    cls = 'banner banner-info';
+    html = '<div style="flex-shrink:0; font-size:20px;">ℹ</div><div>Plan <strong>' + PRICING.plans[state.planForced].name + '</strong> forcé manuellement (suggestion : ' + PRICING.plans[c.flags.suggestedPlan].name + '). <button onclick="state.planForced=null; render();" style="background:none;border:none;color:var(--brand-700);text-decoration:underline;font-weight:600;cursor:pointer;">Revenir au suggéré</button></div>';
+  } else if (c.flags.enterprise) {
+    cls = 'banner banner-info';
+    html = '<div style="flex-shrink:0; font-size:20px;">✦</div><div>Plan <strong>Enterprise</strong> · tarifs dégressifs appliqués pour ' + state.licenses + ' licences. SAML/SCIM, API, CSM dédié inclus.</div>';
+  }
+  if (html) { banner.className = cls; banner.innerHTML = html; banner.style.display = 'flex'; }
+  else banner.style.display = 'none';
+}
+
+function renderAppTabs() {
+  const container = document.getElementById('app-tabs');
+  container.innerHTML = PRICING.apps.map(app => {
+    const isActive = state.activeAppTab === app.id;
+    const isActivated = state.apps.has(app.id);
+    return '<button class="module-tab' + (isActive ? ' active' : '') + (isActivated ? ' activated' : '') + '" data-app="' + app.id + '">' + app.name + '</button>';
+  }).join('');
+  container.querySelectorAll('.module-tab').forEach(el => {
+    el.addEventListener('click', () => { state.activeAppTab = el.dataset.app; render(); });
+  });
+}
+
+function renderAppDetail() {
+  const app = PRICING.apps.find(a => a.id === state.activeAppTab);
+  if (!app) return;
+  const plan = getCurrentPlan();
+  const freq = state.frequency;
+  const price = getAppPrice(app, plan, freq, state.licenses);
+  const isActivated = state.apps.has(app.id);
+
+  const freqSuffix = freq === 'monthly' ? t('freq_monthly').toLowerCase() : t('freq_annual').toLowerCase();
+  let priceLine;
+  if (price == null) {
+    priceLine = '<span style="font-size: 20px; font-weight: 700; color: var(--brand);">' + t('quote_required') + '</span><div style="color: var(--muted); font-size: 13px; margin-top: 6px;">' + t('flag_enterprise') + '</div>';
+  } else {
+    const tot = price * state.licenses;
+    priceLine = '<span style="font-size: 28px; font-weight: 800; color: var(--slate); letter-spacing:-0.5px;">' + formatPrice(tot) + '</span><span style="color: var(--muted); font-size:14px; margin-left:6px;">/ ' + freqSuffix + '</span><div style="color: var(--muted); font-size: 13px; margin-top: 6px;">' + state.licenses + ' ' + t('licences_label') + '</div>';
+  }
+
+  const includes = app.auto_includes.length ? (
+    '<div style="margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--greige-200);">' +
+    '<div class="kicker-muted mb-3">✦ ' + t('included_free') + '</div>' +
+    '<div class="flex flex-wrap gap-2">' + app.auto_includes.map(i => '<span class="pill-greige">' + i + '</span>').join('') + '</div>' +
+    '</div>'
+  ) : '';
+
+  const productGapWarning = app.product_gap ? '<div class="banner banner-warn mt-5" style="font-size: 13px;"><div style="flex-shrink:0;">⚠</div><div>' + app.product_gap + '</div></div>' : '';
+  const appTitle = modT(app.id, 'title') || app.solveg_title;
+  const appBullets = modT(app.id, 'bullets') || app.bullets;
+
+  // Structure dependency: Meetings, OKR, Projects require Structure
+  const requiresStructure = ['meetings', 'okr'].includes(app.id);
+  const structureBlocked = requiresStructure && !state.apps.has('structure') && !isActivated;
+  const depNotice = structureBlocked ? '<div class="banner banner-warn mt-4" style="font-size: 13px;"><div style="flex-shrink:0;">⚠</div><div>' + t('requires_structure') + '</div></div>' : '';
+
+  const btnDisabled = price == null || structureBlocked;
+  const btnLabel = structureBlocked ? t('requires_structure_btn') : (isActivated ? t('activated') : t('activate_addon'));
+
+  document.getElementById('app-detail').innerHTML =
+    '<div class="grid md:grid-cols-2 gap-10 items-start">' +
+      '<div>' +
+        '<div class="flex items-center gap-3 mb-3">' +
+          '<div class="kicker">' + app.name + '</div>' +
+          familyBadge(app.family) +
+        '</div>' +
+        '<h3 style="font-size: 26px; font-weight: 700; line-height: 1.25; letter-spacing: -0.5px; margin-bottom: 20px;">' + appTitle + '</h3>' +
+        '<ul class="module-bullets">' +
+          appBullets.map(b => '<li>' + SPARK_SVG + '<span>' + b + '</span></li>').join('') +
+        '</ul>' +
+        includes +
+        productGapWarning +
+      '</div>' +
+      '<div style="background: var(--cream); border-radius: 16px; padding: 28px;">' +
+        '<div class="kicker-muted mb-3">' + t('plan_on') + ' ' + PRICING.plans[plan].name + '</div>' +
+        '<div>' + priceLine + '</div>' +
+        depNotice +
+        '<div style="margin-top: 20px;">' +
+          '<button class="activate-btn ' + (isActivated ? 'activated' : '') + '" data-app-toggle="' + app.id + '" ' + (btnDisabled ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : '') + '>' +
+            btnLabel +
+          '</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  const btn = document.querySelector('[data-app-toggle="' + app.id + '"]');
+  if (btn && !btn.disabled) {
+    btn.addEventListener('click', () => {
+      if (state.apps.has(app.id)) {
+        state.apps.delete(app.id);
+        // Deactivating Structure auto-deactivates dependent Holaspirit apps
+        if (app.id === 'structure') {
+          ['meetings', 'okr'].forEach(id => state.apps.delete(id));
+        }
+      } else {
+        state.apps.add(app.id);
+      }
+      render();
+    });
+  }
+}
+
+function renderAddonTabs() {
+  const container = document.getElementById('addon-tabs');
+  container.innerHTML = PRICING.addons.map(addon => {
+    const isActive = state.activeAddonTab === addon.id;
+    const isActivated = state.addons.has(addon.id) || (addon.id === 'storage_extra' && state.storageTb > 0);
+    return '<button class="module-tab' + (isActive ? ' active' : '') + (isActivated ? ' activated' : '') + '" data-addon="' + addon.id + '">' + addon.name + (addon.product_gap ? ' ⚠' : '') + '</button>';
+  }).join('');
+  container.querySelectorAll('.module-tab').forEach(el => {
+    el.addEventListener('click', () => { state.activeAddonTab = el.dataset.addon; render(); });
+  });
+}
+
+function renderAddonDetail() {
+  const addon = PRICING.addons.find(a => a.id === state.activeAddonTab);
+  if (!addon) return;
+  const plan = getCurrentPlan();
+  const freq = state.frequency;
+  const unit = getAddonPrice(addon, plan, freq, state.licenses);
+  const isActivated = state.addons.has(addon.id);
+
+  const addonFreqSuffix = freq === 'monthly' ? t('freq_monthly').toLowerCase() : t('freq_annual').toLowerCase();
+  let priceLine;
+  if (unit == null) {
+    priceLine = '<span style="font-size: 20px; font-weight: 700; color: var(--brand);">' + t('quote_required') + '</span>';
+  } else if (addon.pricing_mode === 'fixed') {
+    priceLine = '<span style="font-size: 28px; font-weight: 800; color: var(--slate); letter-spacing:-0.5px;">' + formatPrice(unit) + '</span><span style="color: var(--muted); font-size:14px; margin-left:6px;">/ ' + addonFreqSuffix + '</span>';
+  } else if (addon.pricing_mode === 'per_user') {
+    const tot = unit * state.licenses;
+    priceLine = '<span style="font-size: 28px; font-weight: 800; color: var(--slate); letter-spacing:-0.5px;">' + formatPrice(tot) + '</span><span style="color: var(--muted); font-size:14px; margin-left:6px;">/ ' + addonFreqSuffix + '</span><div style="color: var(--muted); font-size: 13px; margin-top: 6px;">' + state.licenses + ' ' + t('licences_label') + '</div>';
+  } else if (addon.pricing_mode === 'per_tb') {
+    priceLine = '<span style="font-size: 28px; font-weight: 800; color: var(--slate); letter-spacing:-0.5px;">' + formatPrice(unit) + '</span><span style="color: var(--muted); font-size:14px; margin-left:6px;">/ TB · / ' + addonFreqSuffix + '</span>';
+  }
+
+  let translationNote = '';
+  if (addon.exclusive_with) {
+    const other = PRICING.addons.find(a => addon.exclusive_with.includes(a.id));
+    if (other && state.addons.has(other.id)) {
+      translationNote = '<div class="banner banner-info mt-4" style="font-size: 13px;"><div>ℹ</div><div><strong>' + other.name + '</strong> ' + t('activated').toLowerCase() + '. ' + t('activate_addon') + ` → remplace l\'autre.</div></div>`;
+    }
+  }
+
+  const productGapWarning = addon.product_gap ? '<div class="banner banner-warn mt-5" style="font-size: 13px;"><div style="flex-shrink:0;">⚠</div><div>' + addon.product_gap + '</div></div>' : '';
+
+  let cta;
+  if (addon.id === 'storage_extra') {
+    cta = '<div class="flex items-center gap-3"><label class="kicker-muted">' + t('storage_unit') + ' :</label><input type="number" id="storage-input" value="' + state.storageTb + '" min="0" max="50" class="num-input" style="width: 80px;" /></div>' + (state.storageTb > 0 ? '<div style="margin-top: 12px; color: var(--brand); font-weight: 700;">✓ ' + state.storageTb + ' ' + t('storage_active') + '</div>' : '');
+  } else if (unit == null) {
+    cta = '<button class="activate-btn" disabled style="opacity:0.5;cursor:not-allowed;">' + t('quote_required') + '</button>';
+  } else {
+    cta = '<button class="activate-btn ' + (isActivated ? 'activated' : '') + '" data-addon-toggle="' + addon.id + '">' + (isActivated ? t('activated') : t('activate_addon')) + '</button>';
+  }
+
+  const addonTitle = modT(addon.id, 'title') || addon.solveg_title;
+  const addonBullets = modT(addon.id, 'bullets') || addon.bullets;
+
+  document.getElementById('addon-detail').innerHTML =
+    '<div class="grid md:grid-cols-2 gap-10 items-start">' +
+      '<div>' +
+        '<div class="flex items-center gap-3 mb-3">' +
+          '<div class="kicker">' + addon.name + '</div>' +
+          familyBadge(addon.family) +
+        '</div>' +
+        '<h3 style="font-size: 26px; font-weight: 700; line-height: 1.25; letter-spacing: -0.5px; margin-bottom: 20px;">' + addonTitle + '</h3>' +
+        '<ul class="module-bullets">' +
+          addonBullets.map(b => '<li>' + SPARK_SVG + '<span>' + b + '</span></li>').join('') +
+        '</ul>' +
+        productGapWarning +
+      '</div>' +
+      '<div style="background: var(--cream); border-radius: 16px; padding: 28px;">' +
+        '<div class="kicker-muted mb-3">' + t('plan_on') + ' ' + PRICING.plans[plan].name + '</div>' +
+        '<div>' + priceLine + '</div>' +
+        translationNote +
+        '<div style="margin-top: 20px;">' + cta + '</div>' +
+      '</div>' +
+    '</div>';
+
+  const toggleBtn = document.querySelector('[data-addon-toggle="' + addon.id + '"]');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      if (addon.exclusive_with) addon.exclusive_with.forEach(otherId => state.addons.delete(otherId));
+      if (state.addons.has(addon.id)) state.addons.delete(addon.id);
+      else state.addons.add(addon.id);
+      render();
+    });
+  }
+  const storageInput = document.getElementById('storage-input');
+  if (storageInput) {
+    storageInput.addEventListener('input', (e) => {
+      state.storageTb = Math.max(0, Math.min(50, parseInt(e.target.value || '0', 10)));
+      render();
+    });
+  }
+}
+
+function renderHolaWarning(c) {
+  const el = document.getElementById('hola-structure-warning');
+  el.style.display = c.flags.holaWithoutStructure ? 'flex' : 'none';
+  const noModEl = document.getElementById('no-module-warning');
+  if (noModEl) noModEl.style.display = c.flags.noModuleSelected ? 'flex' : 'none';
+  // Disable both PDF buttons when validation fails
+  document.querySelectorAll('button[onclick="printQuote()"]').forEach(btn => {
+    if (c.flags.invalid) {
+      btn.setAttribute('disabled', 'true');
+      btn.style.opacity = '0.5';
+      btn.style.cursor = 'not-allowed';
+    } else {
+      btn.removeAttribute('disabled');
+      btn.style.opacity = '';
+      btn.style.cursor = '';
+    }
+  });
+}
+
+function renderModulesCount() {
+  const el = document.getElementById('modules-activated-count');
+  if (!el) return;
+  const n = state.apps.size;
+  el.textContent = n > 0 ? '(' + n + ' activé' + (n > 1 ? 's' : '') + ')' : '';
+}
+
+let _discountSeq = 0;
+function addCustomDiscount() {
+  state.customDiscounts.push({ id: 'disc_' + (++_discountSeq), label: '', type: 'percent', value: 10, firstYearOnly: false });
+  renderCustomDiscounts();
+  render();
+}
+
+function renderCustomDiscounts() {
+  const el = document.getElementById('custom-discounts-list');
+  if (!el) return;
+  if (state.customDiscounts.length === 0) {
+    el.innerHTML = '<p class="text-sm" style="color:var(--muted); font-style:italic;">' + t('discount_empty') + '</p>';
+    return;
+  }
+  el.innerHTML = state.customDiscounts.map((d, i) => `
+    <div style="border:1px solid var(--greige-200); border-radius:12px; padding:14px; margin-bottom:10px; background:var(--cream);">
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
+        <input type="text" data-disc-label="${i}" value="${d.label}" placeholder="${t('discount_label_placeholder')}" class="num-input" style="flex:1; min-width:160px;" />
+        <div class="freq-toggle" data-disc-type="${i}">
+          <button class="${d.type==='percent'?'active':''}" data-type="percent">%</button>
+          <button class="${d.type==='fixed'?'active':''}" data-type="fixed">€</button>
+        </div>
+        <input type="number" data-disc-value="${i}" value="${d.value}" min="0" class="num-input-small" style="width:80px;" />
+        <button data-disc-del="${i}" style="background:none; border:none; color:var(--greige-500); cursor:pointer; font-size:18px; padding:0 4px;" title="Supprimer">×</button>
+      </div>
+      <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--muted); cursor:pointer;">
+        <input type="checkbox" data-disc-firstyear="${i}" ${d.firstYearOnly?'checked':''} style="accent-color:var(--brand);" />
+        ${t('first_year')}
+      </label>
+    </div>`).join('');
+
+  el.querySelectorAll('[data-disc-label]').forEach(inp => {
+    inp.addEventListener('input', () => { state.customDiscounts[+inp.dataset.discLabel].label = inp.value; render(); });
+  });
+  el.querySelectorAll('[data-disc-type]').forEach(grp => {
+    grp.querySelectorAll('button').forEach(b => {
+      b.addEventListener('click', () => { state.customDiscounts[+grp.dataset.discType].type = b.dataset.type; renderCustomDiscounts(); render(); });
+    });
+  });
+  el.querySelectorAll('[data-disc-value]').forEach(inp => {
+    inp.addEventListener('input', () => { state.customDiscounts[+inp.dataset.discValue].value = parseFloat(inp.value||'0'); render(); });
+  });
+  el.querySelectorAll('[data-disc-firstyear]').forEach(cb => {
+    cb.addEventListener('change', () => { state.customDiscounts[+cb.dataset.discFirstyear].firstYearOnly = cb.checked; render(); });
+  });
+  el.querySelectorAll('[data-disc-del]').forEach(btn => {
+    btn.addEventListener('click', () => { state.customDiscounts.splice(+btn.dataset.discDel, 1); renderCustomDiscounts(); render(); });
+  });
+}
+
+function renderPerlineList() {
+  const container = document.getElementById('perline-discount-list');
+  if (!container) return;
+  const items = [];
+  // Upfront always first
+  const planCfg = PRICING.plans[getCurrentPlan()];
+  items.push({ id: 'upfront', name: 'Forfait ' + planCfg.name + ' — Abonnement de base', family: null, kind: 'forfait' });
+  state.apps.forEach(id => {
+    const a = PRICING.apps.find(x => x.id === id);
+    if (a) items.push({ id, name: a.name + holaSuffix(a), family: a.family, kind: 'module' });
+  });
+  state.addons.forEach(id => {
+    const a = PRICING.addons.find(x => x.id === id);
+    if (a) items.push({ id, name: a.name + holaSuffix(a), family: a.family, kind: 'add-on' });
+  });
+  if (state.storageTb > 0) {
+    const a = PRICING.addons.find(x => x.id === 'storage_extra');
+    items.push({ id: 'storage_extra', name: a.name, family: a.family, kind: 'add-on' });
+  }
+  if (state.guests > 0 && getCurrentPlan() !== 'enterprise') {
+    items.push({ id: 'guests', name: 'Guests / Membres inactifs', family: null, kind: 'guests' });
+  }
+
+  if (items.length === 0) {
+    container.innerHTML = '<div class="text-sm" style="color: var(--muted); font-style: italic;">' + t('perline_empty') + '</div>';
+    return;
+  }
+
+  container.innerHTML = items.map(item => {
+    const d = state.perLineDiscounts[item.id] || { enabled: false, type: 'percent', value: 10, firstYearOnly: false };
+    return (
+      '<div style="border:1px solid var(--greige-200); border-radius:12px; padding:14px; margin-bottom:10px; background:white;">' +
+        '<label style="display:flex; align-items:center; gap:10px; cursor:pointer; margin-bottom:' + (d.enabled ? '12px' : '0') + ';">' +
+          '<input type="checkbox" data-perline-toggle="' + item.id + '" ' + (d.enabled ? 'checked' : '') + ' style="width:18px; height:18px; accent-color: var(--brand); cursor:pointer;" />' +
+          '<span style="font-weight:600; font-size:14px;">' + item.name + '</span>' +
+          familyBadge(item.family) +
+          '<span style="font-size: 11px; color: var(--muted); background: var(--greige-100); padding: 2px 8px; border-radius: 100px;">' + item.kind + '</span>' +
+        '</label>' +
+        (d.enabled ? (
+          '<div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding-left:28px;">' +
+            '<div class="freq-toggle" data-perline-type="' + item.id + '">' +
+              '<button class="' + (d.type === 'percent' ? 'active' : '') + '" data-type="percent">%</button>' +
+              '<button class="' + (d.type === 'fixed' ? 'active' : '') + '" data-type="fixed">€</button>' +
+            '</div>' +
+            '<input type="number" data-perline-value="' + item.id + '" value="' + d.value + '" min="0" class="num-input-small" />' +
+            '<label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--muted); cursor:pointer;">' +
+              '<input type="checkbox" data-perline-firstyear="' + item.id + '" ' + (d.firstYearOnly ? 'checked' : '') + ' style="accent-color: var(--brand);" />' +
+              '1ʳᵉ année uniquement' +
+            '</label>' +
+          '</div>'
+        ) : '') +
+      '</div>'
+    );
+  }).join('');
+
+  // Event listeners
+  container.querySelectorAll('[data-perline-toggle]').forEach(el => {
+    el.addEventListener('change', () => {
+      const id = el.dataset.perlineToggle;
+      if (!state.perLineDiscounts[id]) state.perLineDiscounts[id] = { enabled: false, type: 'percent', value: 10, firstYearOnly: false };
+      state.perLineDiscounts[id].enabled = el.checked;
+      render();
+    });
+  });
+  container.querySelectorAll('[data-perline-type]').forEach(group => {
+    const id = group.dataset.perlineType;
+    group.querySelectorAll('button').forEach(b => {
+      b.addEventListener('click', () => {
+        state.perLineDiscounts[id].type = b.dataset.type;
+        render();
+      });
+    });
+  });
+  container.querySelectorAll('[data-perline-value]').forEach(el => {
+    el.addEventListener('input', () => {
+      const id = el.dataset.perlineValue;
+      state.perLineDiscounts[id].value = Math.max(0, parseFloat(el.value || '0'));
+      render();
+    });
+  });
+  container.querySelectorAll('[data-perline-firstyear]').forEach(el => {
+    el.addEventListener('change', () => {
+      const id = el.dataset.perlineFirstyear;
+      state.perLineDiscounts[id].firstYearOnly = el.checked;
+      render();
+    });
+  });
+}
+
+function renderRecap(c) {
+  const tbody = document.getElementById('recap-tbody');
+  let html = '';
+  for (const l of c.lines) {
+    const unitPriceDisplay = l.unitPrice == null ? '—' : formatPrice(l.unitPrice, { forceDecimals: l.unitPrice < 10 && l.unitPrice > 0 });
+    let discountDisplay = l.discountPct > 0 ? '−' + l.discountPct + ' %' : '—';
+    if (l.extraDiscountLabel) discountDisplay = (l.discountPct > 0 ? '−' + l.discountPct + ' %, ' : '') + l.extraDiscountLabel;
+    const subtotalDisplay = l.note === 'Inclus' ? '<em style="color: var(--brand);">Inclus</em>' : (l.unitPrice == null ? '<em style="color: var(--muted);">Sur devis</em>' : formatPrice(l.subtotal));
+    html += '<tr>' +
+      '<td>' + l.label + (l.family ? ' ' + familyBadge(l.family) : '') + (l.sublabel ? '<div class="label-secondary">' + l.sublabel + '</div>' : '') + '</td>' +
+      '<td class="right">' + l.qty + '</td>' +
+      '<td class="right">' + unitPriceDisplay + '</td>' +
+      '<td class="right">' + discountDisplay + '</td>' +
+      '<td class="right">' + subtotalDisplay + '</td>' +
+      '</tr>';
+  }
+  for (const dl of (c.globalDiscountLines || [])) {
+    html += '<tr class="discount-row"><td colspan="4">' + dl.label + '</td><td class="right">−' + formatPrice(dl.amount) + '</td></tr>';
+  }
+  if (state.ngo || c.globalDiscountAmount > 0 || Object.values(state.perLineDiscounts).some(d => d.enabled)) {
+    html += '<tr class="subtotal-row"><td colspan="4">' + t('subtotal_after') + '</td><td class="right">' + formatPrice(c.subtotalBeforeGlobal - c.globalDiscountAmount) + '</td></tr>';
+  }
+  const totalLabel = state.frequency === 'monthly' ? t('total_monthly') : t('total_annual');
+  html += '<tr class="total-row"><td colspan="4">' + totalLabel + '</td><td class="right">' + formatPrice(c.total) + '</td></tr>';
+  tbody.innerHTML = html;
+
+  const flagsEl = document.getElementById('recap-flags');
+  let flagsHtml = '';
+  if (c.flags.enterprise) flagsHtml += '<div class="banner banner-info" style="font-size: 13px;"><div>✦</div><div>' + t('flag_enterprise') + '</div></div>';
+  if (c.flags.productGaps.length > 0) {
+    const items = c.flags.productGaps.map(id => { const item = PRICING.apps.find(a => a.id === id) || PRICING.addons.find(a => a.id === id); return item ? item.name : id; });
+    flagsHtml += '<div class="banner banner-warn" style="font-size: 13px;"><div>⚠</div><div><strong>' + t('flag_gaps') + '</strong> ' + items.join(', ') + '</div></div>';
+  }
+  if (c.flags.customPriceLines.length > 0) flagsHtml += '<div class="banner banner-info" style="font-size: 13px;"><div>ℹ</div><div>' + t('flag_custom_price') + '</div></div>';
+  flagsEl.innerHTML = flagsHtml;
+}
+
+// ============================================================================
+// PRESETS & RESET
+// ============================================================================
+function applyPreset(preset) {
+  state.licenses = preset.licenses;
+  state.guests = preset.guests;
+  state.apps = new Set(preset.apps);
+  state.addons = new Set(preset.addons);
+  state.storageTb = 0;
+  state.planForced = null;
+  state.activeAppTab = preset.apps[0] || 'newsfeed';
+  state.activeAddonTab = preset.addons[0] || 'videoconf';
+  state.perLineDiscounts = {};
+  document.getElementById('licenses-input').value = state.licenses;
+  document.getElementById('licenses-range').value = Math.min(state.licenses, 1000);
+  document.getElementById('guests-input').value = state.guests;
+  render();
+}
+
+function resetState() {
+  state.licenses = 50;
+  state.guests = 0;
+  state.apps = new Set();
+  state.addons = new Set();
+  state.storageTb = 0;
+  state.planForced = null;
+  state.activeAppTab = 'newsfeed';
+  state.activeAddonTab = 'videoconf';
+  state.ngo = false;
+  state.customDiscounts = [];
+  state.perLineDiscounts = {};
+  document.getElementById('licenses-input').value = 50;
+  document.getElementById('licenses-range').value = 50;
+  document.getElementById('guests-input').value = 0;
+  document.getElementById('ngo-checkbox').checked = false;
+  renderCustomDiscounts();
+  render();
+}
+
+// ============================================================================
+// AI CHAT ASSISTANT — rule-based command parsing
+// ============================================================================
+function chatAddMessage(text, sender) {
+  const container = document.getElementById('chat-messages');
+  const msg = document.createElement('div');
+  msg.className = 'chat-msg ' + sender;
+  msg.innerHTML = text;
+  container.appendChild(msg);
+  container.scrollTop = container.scrollHeight;
+}
+
+function parseChatCommand(raw) {
+  const t = raw.toLowerCase().trim();
+  if (!t) return null;
+  let m;
+
+  // Reset
+  if (/^(reset|recommence|vide|efface|nouveau)/.test(t)) {
+    resetState();
+    return `Simulation réinitialisée. Vous repartez d'une page blanche.`;
+  }
+
+  // Frequency
+  if (/(affiche|montre|passe|vue).*(annuel|année|an\b|yearly)/.test(t) || /^(annuel|annual)$/.test(t)) {
+    state.frequency = 'annual'; render();
+    return 'Affichage en <strong>vue annuelle</strong>. Tous les prix sont annuels maintenant.';
+  }
+  if (/(affiche|montre|passe|vue).*(mensuel|mois|monthly)/.test(t) || /^(mensuel|monthly)$/.test(t)) {
+    state.frequency = 'monthly'; render();
+    return 'Affichage en <strong>vue mensuelle</strong>. Tous les prix sont mensuels maintenant.';
+  }
+
+  // Preset
+  for (const preset of PRICING.presets) {
+    if (t.includes(preset.id.replace(/-/g, ' ')) || t.includes(preset.label.toLowerCase()) || (t.includes('préset') && t.includes(preset.id.split('-')[0]))) {
+      applyPreset(preset);
+      return 'Préset <strong>' + preset.label + '</strong> chargé. ' + preset.licenses + ' licences, ' + preset.apps.length + ' modules, ' + preset.addons.length + ' add-on(s).';
+    }
+  }
+
+  // Plan force
+  if ((m = t.match(/(?:passe|force|plan|en)\s+(rise|scale|enterprise)/)) || (m = t.match(/^(rise|scale|enterprise)$/))) {
+    state.planForced = m[1];
+    render();
+    return 'Plan <strong>' + PRICING.plans[m[1]].name + '</strong> forcé.';
+  }
+
+  // Licences
+  if ((m = t.match(/(\d+)\s*(?:licences?|utilisateurs?|personnes?|membres?|users?|pax|collaborateurs?)/))) {
+    state.licenses = parseInt(m[1], 10);
+    document.getElementById('licenses-input').value = state.licenses;
+    document.getElementById('licenses-range').value = Math.min(state.licenses, 1000);
+    render();
+    return state.licenses + ' licences activées. Plan suggéré : <strong>' + PRICING.plans[suggestPlan(state.licenses, state.guests)].name + '</strong>.';
+  }
+
+  // Guests
+  if ((m = t.match(/(\d+)\s*(?:guests?|invités?|externes?|inactifs?)/))) {
+    state.guests = parseInt(m[1], 10);
+    document.getElementById('guests-input').value = state.guests;
+    render();
+    return state.guests + ' guests configurés.';
+  }
+
+  // Storage
+  if ((m = t.match(/(\d+)\s*to.*(?:stockage|storage)/) || (m = t.match(/(?:stockage|storage).*?(\d+)\s*to/)))) {
+    state.storageTb = parseInt(m[1], 10);
+    render();
+    return state.storageTb + ' To de stockage additionnel ajoutés.';
+  }
+
+  // Apps + addons - activation / deactivation
+  const allItems = [
+    ...PRICING.apps.map(a => ({ ...a, isApp: true })),
+    ...PRICING.addons.map(a => ({ ...a, isApp: false }))
+  ];
+  const activate = /(active|ajoute|coche|met|add)/.test(t);
+  const deactivate = /(désactive|desactive|retire|décoche|decoche|enlève|enleve|remove)/.test(t);
+
+  const matches = [];
+  for (const item of allItems) {
+    const name = item.name.toLowerCase();
+    const altNames = {
+      'chat': ['tchat', 'messagerie'],
+      'office': ['bureautique', 'onlyoffice'],
+      'projects & actions': ['projects', 'projet', 'projets', 'kanban'],
+      'translation 1-2 langues': ['translation 1-2', 'translation 1 2', 'trad 1-2', '1-2 langues'],
+      'translation 3+ langues': ['translation 3+', 'trad 3+', '3+ langues', 'trad illimité'],
+      'videoconf': ['video', 'visio', 'visioconf', 'video conf'],
+      'storage supplémentaire': ['stockage', 'storage']
+    };
+    const tokens = [name, ...(altNames[name] || [])];
+    if (tokens.some(tok => t.includes(tok))) matches.push(item);
+  }
+
+  if (matches.length > 0) {
+    const results = [];
+    for (const item of matches) {
+      if (deactivate) {
+        if (item.isApp) state.apps.delete(item.id);
+        else state.addons.delete(item.id);
+        results.push(item.name + ' désactivé');
+      } else {
+        if (item.isApp) {
+          state.apps.add(item.id);
+        } else {
+          if (item.exclusive_with) item.exclusive_with.forEach(o => state.addons.delete(o));
+          state.addons.add(item.id);
+        }
+        results.push(item.name + ' activé');
+      }
+    }
+    render();
+    return '✓ ' + results.join('. ') + '.';
+  }
+
+  // NGO
+  if (/(ngo|association|asso|éducation|education|école|ecole)/.test(t)) {
+    state.ngo = !deactivate;
+    document.getElementById('ngo-checkbox').checked = state.ngo;
+    render();
+    return state.ngo ? 'Remise <strong>NGO/Éducation −50 %</strong> activée sur toutes les lignes.' : 'Remise NGO/Éducation désactivée.';
+  }
+
+  // Custom discount (%)
+  if ((m = t.match(/remise[^0-9]*?(\d+)\s*%/)) || (m = t.match(/(\d+)\s*%\s*de remise/))) {
+    state.commercialMode = true;
+    document.body.classList.add('commercial-mode');
+    document.getElementById('commercial-toggle').innerHTML = '✕ Masquer le mode commercial';
+    state.customDiscounts.push({ id: 'disc_chat_' + Date.now(), label: 'Remise commerciale', type: 'percent', value: parseInt(m[1], 10), firstYearOnly: false });
+    renderCustomDiscounts();
+    render();
+    return 'Remise commerciale de <strong>−' + m[1] + ' %</strong> ajoutée (mode commercial activé).';
+  }
+
+  // Custom discount (€)
+  if ((m = t.match(/remise[^0-9]*?(\d+)\s*€/)) || (m = t.match(/(\d+)\s*€\s*de remise/))) {
+    state.commercialMode = true;
+    document.body.classList.add('commercial-mode');
+    state.customDiscounts.push({ id: 'disc_chat_' + Date.now(), label: 'Remise commerciale', type: 'fixed', value: parseInt(m[1], 10), firstYearOnly: false });
+    renderCustomDiscounts();
+    render();
+    return 'Remise commerciale fixe de <strong>−' + m[1] + ' €</strong> ajoutée.';
+  }
+
+  return null;
+}
+
+function handleChatSubmit(text) {
+  if (!text || !text.trim()) return;
+  chatAddMessage(text, 'user');
+  const response = parseChatCommand(text);
+  setTimeout(() => {
+    if (response) {
+      chatAddMessage(response, 'bot');
+    } else {
+      chatAddMessage(t('chat_unknown'), 'bot');
+    }
+  }, 250);
+}
+
+// ============================================================================
+// EVENTS
+// ============================================================================
+function initEvents() {
+  // Licences
+  const licInput = document.getElementById('licenses-input');
+  const licRange = document.getElementById('licenses-range');
+  licInput.addEventListener('input', () => {
+    const v = Math.max(1, Math.min(20000, parseInt(licInput.value || '1', 10)));
+    state.licenses = v;
+    if (v <= 1000) licRange.value = v;
+    render();
+  });
+  licRange.addEventListener('input', () => {
+    state.licenses = parseInt(licRange.value, 10);
+    licInput.value = state.licenses;
+    render();
+  });
+
+  // Guests
+  const gInput = document.getElementById('guests-input');
+  gInput.addEventListener('input', () => {
+    const v = Math.max(0, Math.min(10000, parseInt(gInput.value || '0', 10)));
+    state.guests = v;
+    render();
+  });
+
+  // Freq
+  document.querySelectorAll('#freq-toggle button').forEach(b => {
+    b.addEventListener('click', () => { state.frequency = b.dataset.freq; render(); });
+  });
+
+  // Language
+  document.querySelectorAll('#lang-toggle button').forEach(b => {
+    b.addEventListener('click', () => { state.lang = b.dataset.lang; render(); });
+  });
+
+  // NGO
+  document.getElementById('ngo-checkbox').addEventListener('change', (e) => { state.ngo = e.target.checked; render(); });
+
+  // Commercial mode
+  document.getElementById('commercial-toggle').addEventListener('click', () => {
+    state.commercialMode = !state.commercialMode;
+    document.body.classList.toggle('commercial-mode', state.commercialMode);
+    document.getElementById('commercial-toggle').innerHTML = state.commercialMode ? t('commercial_mode_off') : t('commercial_mode_on');
+    render();
+  });
+
+
+  // Hola structure warning CTA
+  document.getElementById('add-structure-btn').addEventListener('click', () => {
+    state.apps.add('structure');
+    state.activeAppTab = 'structure';
+    render();
+    document.getElementById('s2').scrollIntoView({ behavior: 'smooth' });
+  });
+
+  // Nav dots
+  document.querySelectorAll('.nav-dot').forEach(d => {
+    d.addEventListener('click', () => {
+      const target = document.getElementById(d.dataset.target);
+      if (target) target.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+
+  // Scroll-driven progress + active dot
+  window.addEventListener('scroll', () => {
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = max > 0 ? (window.scrollY / max) * 100 : 0;
+    document.getElementById('progress-bar').style.width = pct + '%';
+    const sections = ['s1', 's2', 's3', 's4', 's5'];
+    let active = sections[0];
+    for (const id of sections) {
+      const el = document.getElementById(id);
+      if (el && el.getBoundingClientRect().top < 200) active = id;
+    }
+    document.querySelectorAll('.nav-dot').forEach(d => d.classList.toggle('active', d.dataset.target === active));
+  });
+
+  // Chat
+  document.getElementById('chat-launcher').addEventListener('click', () => {
+    state.chatOpen = !state.chatOpen;
+    document.getElementById('chat-panel').classList.toggle('open', state.chatOpen);
+    if (state.chatOpen && state.chatMessages.length === 0) {
+      chatAddMessage('✦ ' + t('chat_title') + ' — ' + t('chat_subtitle') + '.', 'bot');
+      state.chatMessages.push('greeted');
+    }
+  });
+  document.getElementById('chat-close').addEventListener('click', () => {
+    state.chatOpen = false;
+    document.getElementById('chat-panel').classList.remove('open');
+  });
+  document.getElementById('chat-send').addEventListener('click', () => {
+    const input = document.getElementById('chat-input');
+    handleChatSubmit(input.value);
+    input.value = '';
+    input.focus();
+  });
+  document.getElementById('chat-input').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      handleChatSubmit(e.target.value);
+      e.target.value = '';
+    }
+  });
+  document.querySelectorAll('.chat-suggestion').forEach(b => {
+    b.addEventListener('click', () => {
+      if (!state.chatOpen) {
+        state.chatOpen = true;
+        document.getElementById('chat-panel').classList.add('open');
+      }
+      handleChatSubmit(b.dataset.cmd);
+    });
+  });
+}
+
+// ============================================================================
+// PRINT QUOTE
+// ============================================================================
+function printQuote() {
+  const c = computeTotal();
+  if (c.flags.invalid) {
+    alert(c.flags.noModuleSelected ? t('no_module_warning') : t('hola_warning').replace(/<[^>]+>/g, ''));
+    return;
+  }
+  const freq = state.frequency;
+  const plan = c.plan;
+  const planName = PRICING.plans[plan].name;
+  const freqLabel = freq === 'monthly' ? t('freq_monthly') : t('freq_annual');
+  const locale = state.lang === 'de' ? 'de-DE' : state.lang === 'en' ? 'en-GB' : 'fr-FR';
+  const dateStr = new Date().toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' });
+  const refStr = 'SIM-' + new Date().toISOString().slice(0,10).replace(/-/g,'');
+
+  function qBadge(family) {
+    if (!family || family === 'mixed') return '';
+    return `<span class="q-badge q-badge-${family}">${family === 'hola' ? 'Holaspirit' : 'Talkspirit'}</span>`;
+  }
+
+  let rows = '';
+  for (const l of c.lines) {
+    const pu = l.unitPrice == null ? '—' : formatPrice(l.unitPrice, { forceDecimals: l.unitPrice < 10 && l.unitPrice > 0 });
+    let remise = l.discountPct > 0 ? `−${l.discountPct} %` : '—';
+    if (l.extraDiscountLabel) remise = (l.discountPct > 0 ? `−${l.discountPct} %, ` : '') + l.extraDiscountLabel;
+    const st = l.note === 'Inclus' ? `<em style="color:#F56220">${t('activated')}</em>` : (l.unitPrice == null ? `<em style="color:#AA7F65">${t('quote_required')}</em>` : formatPrice(l.subtotal));
+    rows += `<tr>
+      <td>${l.label}${qBadge(l.family)}${l.sublabel ? `<div class="q-sublabel">${l.sublabel}</div>` : ''}</td>
+      <td class="r">${l.qty}</td>
+      <td class="r">${pu}</td>
+      <td class="r">${remise}</td>
+      <td class="r">${st}</td>
+    </tr>`;
+  }
+  for (const dl of (c.globalDiscountLines || [])) {
+    rows += `<tr class="q-discount-row"><td colspan="4">${dl.label}</td><td class="r">−${formatPrice(dl.amount)}</td></tr>`;
+  }
+  const hasDiscounts = state.ngo || c.globalDiscountAmount > 0 || Object.values(state.perLineDiscounts).some(d => d.enabled);
+  if (hasDiscounts) {
+    rows += `<tr class="q-subtotal-row"><td colspan="4">${t('q_subtotal')}</td><td class="r">${formatPrice(c.subtotalBeforeGlobal - c.globalDiscountAmount)}</td></tr>`;
+  }
+  const totalLabel = freq === 'monthly' ? t('q_total_monthly') : t('q_total_annual');
+  rows += `<tr class="q-total-row"><td colspan="4">${totalLabel}</td><td class="r">${formatPrice(c.total)}</td></tr>`;
+
+  const ngoNote = state.ngo ? '<br>' + t('q_ngo_note') : '';
+  const entNote = c.flags.enterprise ? '<br>' + t('q_enterprise_note') : '';
+  const guestsStr = state.guests > 0 ? ` · ${state.guests} ${t('q_guests_label')}` : '';
+
+  document.getElementById('quote-print').innerHTML = `
+    <div class="q-header">
+      <img class="q-logo" src="https://assets-global.website-files.com/63f4481e7f89ee1c5b69c77f/63f4481e7f89ee1c5b69c7b3_Logo-Talkspirit-Orange.svg" alt="Talkspirit">
+      <div class="q-header-right">
+        <h1>${t('q_title')}</h1>
+        <div class="q-ref">${t('q_ref_prefix')} ${refStr} · ${dateStr}</div>
+      </div>
+    </div>
+    <div class="q-meta">
+      <div class="q-meta-block">
+        <div class="label">${t('q_meta_plan')}</div>
+        <div class="value">${planName}</div>
+      </div>
+      <div class="q-meta-block">
+        <div class="label">${t('q_meta_users')}</div>
+        <div class="value">${state.licenses} ${t('q_users_label')}${guestsStr}</div>
+      </div>
+      <div class="q-meta-block">
+        <div class="label">${t('q_meta_billing')}</div>
+        <div class="value">${freqLabel}</div>
+      </div>
+      <div class="q-meta-block">
+        <div class="label">${t('q_meta_modules')}</div>
+        <div class="value">${state.apps.size + state.addons.size} ${t('q_modules_label')}</div>
+      </div>
+    </div>
+    <div class="q-body">
+      <div class="q-section-title">${t('q_section')}</div>
+      <table class="q-table">
+        <thead>
+          <tr>
+            <th>${t('q_col_label')}</th>
+            <th class="r" style="width:50px">${t('q_col_qty')}</th>
+            <th class="r" style="width:90px">${t('q_col_unit')}</th>
+            <th class="r" style="width:100px">${t('q_col_discount')}</th>
+            <th class="r" style="width:110px">${t('q_col_subtotal')}</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <div class="q-footer">
+      <div class="q-note">
+        ${t('q_footer_note')} ${dateStr}.${ngoNote}${entNote}
+        <br>${t('q_contact')} <strong>contact@talkspirit.com</strong>
+      </div>
+      <div class="q-total-summary">
+        <div class="big">${formatPrice(c.total)}</div>
+        <div class="small">${freqLabel.toUpperCase()} · ${planName}</div>
+      </div>
+    </div>`;
+
+  window.print();
+}
+
+// Boot
+initEvents();
+render();
+</script>
+
+<div id="quote-print"></div>
+
+</body>
+</html>
