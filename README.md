@@ -4,7 +4,7 @@ Simulateur de prix interactif pour les équipes Talkspirit.
 
 ## Accès
 
-URL : `https://louissegers-byte.github.io/pricing-simulator/`
+URL : `https://talkspirit.github.io/pricing-simulator/`
 
 Accès protégé par mot de passe (demande à l'équipe).
 
