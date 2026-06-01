@@ -248,12 +248,16 @@
   }
   .chat-send:hover { background: var(--brand-700); }
 
-  /* Print — seul #quote-print est visible */
+  /* Print — seul #quote-print est visible. @page margin-bottom:0 supprime l'URL ajoutée par le navigateur. */
+  @page { size: A4; margin: 15mm 15mm 0 15mm; }
   @media print {
     body > *:not(#quote-print) { display: none !important; }
     #quote-print { display: block !important; }
+    /* Carré blanc en bas de chaque page qui couvre l'URL si le navigateur insiste */
+    #print-footer-mask { display: block !important; }
   }
   #quote-print { display: none; }
+  #print-footer-mask { display: none; position: fixed; bottom: 0; left: 0; right: 0; height: 15mm; background: white; z-index: 999999; }
 
   /* Quote print styles */
   #quote-print {
@@ -2430,6 +2434,7 @@ render();
 </script>
 
 <div id="quote-print"></div>
+<div id="print-footer-mask"></div>
 
 </body>
 </html>
