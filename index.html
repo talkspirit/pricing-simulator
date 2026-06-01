@@ -486,10 +486,10 @@
     <div class="flex items-center gap-3 mb-6 flex-wrap" style="padding: 8px 0;">
       <label class="text-sm" style="color: var(--muted);">
         <span data-i18n="s1_guests_label">Guests / membres inactifs</span>
-        <span class="info-dot" data-i18n-tip="s1_guests_tip" data-tip="Utilisateurs externes ou inactifs avec accès limité. Facturés par tranches de 100. Inclus illimité sur Enterprise.">i</span>
+        <span class="info-dot" data-i18n-tip="s1_guests_tip" data-tip="Utilisateurs externes ou inactifs avec accès limité. Facturés par tranches de 100.">i</span>
       </label>
       <input type="number" id="guests-input" min="0" max="10000" value="0" class="num-input-small" />
-      <span class="text-xs" style="color: var(--muted);" data-i18n="s1_guests_price">49 € la tranche de 100</span>
+      <span class="text-xs" style="color: var(--muted);" id="guests-price-label">49 € / 100 / mois</span>
     </div>
 
     <div id="plan-banner" class="banner banner-info mb-4" style="display:none"></div>
@@ -885,9 +885,9 @@ const PRICING = {
   guests: {
     tranche_size: 100,
     rates: {
-      rise:  { monthly_per_tranche: 49, annual_per_tranche: 588 },
-      scale: { monthly_per_tranche: 49, annual_per_tranche: 588 },
-      enterprise: 'included'
+      rise:       { monthly_per_tranche: 49, annual_per_tranche: 588 },
+      scale:      { monthly_per_tranche: 49, annual_per_tranche: 588 },
+      enterprise: { monthly_per_tranche: 49, annual_per_tranche: 588 }
     },
     product_gap: 'Gratuit côté produit malgré la facturation commerciale.'
   },
@@ -916,8 +916,8 @@ const I18N = {
     s1_licenses_label:'Licences membres',
     s1_licenses_hint:'De 1 à 14 000 personnes. Au-delà : tarif sur devis.',
     s1_guests_label:'Guests / membres inactifs',
-    s1_guests_tip:'Utilisateurs externes ou inactifs avec accès limité. Facturés par tranches de 100. Inclus illimité sur Enterprise.',
-    s1_guests_price:'49 € la tranche de 100',
+    s1_guests_tip:'Utilisateurs externes ou inactifs avec accès limité. Facturés par tranches de 100.',
+    s1_guests_price_monthly:'49 € / 100 / mois', s1_guests_price_annual:'588 € / 100 / an',
     s2_kicker:'Vos modules',
     s2_h2:'Chaque module est <em class="accent">autonome</em>. Vous payez ce que vous activez.',
     s2_desc:`Cliquez un module pour voir ce qu\'il fait, ce qu\'il inclut sans surcoût, et son prix.`,
@@ -987,8 +987,8 @@ const I18N = {
     s1_licenses_label:'Member licences',
     s1_licenses_hint:'From 1 to 14,000 people. Beyond that: quote on request.',
     s1_guests_label:'Guests / inactive members',
-    s1_guests_tip:'External or inactive users with limited access. Billed in blocks of 100. Unlimited on Enterprise.',
-    s1_guests_price:'€49 per block of 100',
+    s1_guests_tip:'External or inactive users with limited access. Billed in blocks of 100.',
+    s1_guests_price_monthly:'€49 / 100 / month', s1_guests_price_annual:'€588 / 100 / year',
     s2_kicker:'Your modules',
     s2_h2:'Each module is <em class="accent">independent</em>. You pay for what you activate.',
     s2_desc:'Click a module to see what it does, what it includes at no extra cost, and its price.',
@@ -1058,8 +1058,8 @@ const I18N = {
     s1_licenses_label:'Mitglieder-Lizenzen',
     s1_licenses_hint:'Von 1 bis 14.000 Personen. Darüber hinaus: Preis auf Anfrage.',
     s1_guests_label:'Gäste / inaktive Mitglieder',
-    s1_guests_tip:'Externe oder inaktive Nutzer mit eingeschränktem Zugang. Abgerechnet in 100er-Blöcken. Bei Enterprise inklusive.',
-    s1_guests_price:'49 € pro 100er-Block',
+    s1_guests_tip:'Externe oder inaktive Nutzer mit eingeschränktem Zugang. Abgerechnet in 100er-Blöcken.',
+    s1_guests_price_monthly:'49 € / 100 / Monat', s1_guests_price_annual:'588 € / 100 / Jahr',
     s2_kicker:'Ihre Module',
     s2_h2:'Jedes Modul ist <em class="accent">eigenständig</em>. Sie zahlen nur, was Sie aktivieren.',
     s2_desc:'Klicken Sie auf ein Modul, um zu sehen, was es leistet, was es enthält und was es kostet.',
@@ -1416,7 +1416,7 @@ function computeTotal() {
   }
 
   // Guests
-  if (state.guests > 0 && plan !== 'enterprise') {
+  if (state.guests > 0) {
     const tranches = Math.ceil(state.guests / 100);
     const unit = PRICING.guests.rates[plan][freq === 'monthly' ? 'monthly_per_tranche' : 'annual_per_tranche'];
     lines.push({
@@ -1424,13 +1424,6 @@ function computeTotal() {
       sublabel: state.guests + ' personnes · ' + tranches + ' tranche' + (tranches > 1 ? 's' : '') + ' de 100',
       family: null, qty: tranches, unitPrice: unit, discountPct: 0,
       subtotal: unit * tranches, productGap: true
-    });
-  } else if (state.guests > 0 && plan === 'enterprise') {
-    lines.push({
-      id: 'guests', label: 'Guests / Membres inactifs',
-      sublabel: state.guests + ' personnes · inclus sur Enterprise',
-      family: null, qty: state.guests, unitPrice: 0, discountPct: 0,
-      subtotal: 0, note: 'Inclus'
     });
   }
 
@@ -1542,6 +1535,9 @@ function render() {
   renderAddonDetail();
   renderHolaWarning(c);
   applyLang();
+  // Dynamic guests price label based on Annual/Monthly toggle
+  const guestsLabel = document.getElementById('guests-price-label');
+  if (guestsLabel) guestsLabel.textContent = t(state.frequency === 'monthly' ? 's1_guests_price_monthly' : 's1_guests_price_annual');
   renderCustomDiscounts();
   renderPerlineList();
   renderRecap(c);
