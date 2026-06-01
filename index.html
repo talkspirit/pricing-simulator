@@ -1893,7 +1893,7 @@ function renderPerlineList() {
     const a = PRICING.addons.find(x => x.id === 'storage_extra');
     items.push({ id: 'storage_extra', name: a.name, family: a.family, kind: 'add-on' });
   }
-  if (state.guests > 0 && getCurrentPlan() !== 'enterprise') {
+  if (state.guests > 0) {
     items.push({ id: 'guests', name: 'Guests / Membres inactifs', family: null, kind: 'guests' });
   }
 
