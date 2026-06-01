@@ -2422,17 +2422,13 @@ function printQuote() {
       </div>
     </div>`;
 
-  const el = document.getElementById('quote-print');
-  // Render the quote in a real, visible container so html2canvas computes proper dimensions.
-  // We cover it with a full-screen overlay so the user only sees a "Génération du PDF…" message.
-  const prev = { display: el.style.display, position: el.style.position, left: el.style.left, top: el.style.top, width: el.style.width, background: el.style.background, zIndex: el.style.zIndex };
-  el.style.display = 'block';
-  el.style.position = 'fixed';
-  el.style.left = '0';
-  el.style.top = '0';
-  el.style.width = '800px';
-  el.style.background = '#ffffff';
-  el.style.zIndex = '99998';
+  // Build a fresh container in body (avoids polluted #quote-print id with display:none CSS rule)
+  const quoteHtml = document.getElementById('quote-print').innerHTML;
+  const fresh = document.createElement('div');
+  fresh.className = 'pdf-render-container';
+  fresh.style.cssText = 'position:fixed;left:0;top:0;width:800px;background:#ffffff;z-index:99998;font-family:DM Sans,sans-serif;color:#2E1F1C;';
+  fresh.innerHTML = quoteHtml;
+  document.body.appendChild(fresh);
 
   // Loading overlay on top
   const overlay = document.createElement('div');
@@ -2444,35 +2440,31 @@ function printQuote() {
   document.body.appendChild(overlay);
 
   const filename = 'simulation-talkspirit-' + refStr + '.pdf';
-  const restore = () => {
-    el.style.display = prev.display;
-    el.style.position = prev.position;
-    el.style.left = prev.left;
-    el.style.top = prev.top;
-    el.style.width = prev.width;
-    el.style.background = prev.background;
-    el.style.zIndex = prev.zIndex;
+  const cleanup = () => {
+    fresh.remove();
     overlay.remove();
     spinStyle.remove();
   };
 
-  // Delay so the browser fully lays out the now-visible element before snapshot
+  // Delay so the browser fully lays out the new element before snapshot
   setTimeout(() => {
-    const w = el.offsetWidth || 800;
-    const h = el.offsetHeight;
+    const w = fresh.offsetWidth;
+    const h = fresh.offsetHeight;
     html2pdf().set({
       margin: [10, 10, 10, 10],
       filename: filename,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false, imageTimeout: 0, width: w, height: h, windowWidth: w, windowHeight: Math.max(window.innerHeight, h) },
+      // CRITICAL: pass width+height (canvas size) but DO NOT pass windowWidth/Height
+      // (those would force a layout reflow and shift content)
+      html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false, imageTimeout: 0, width: w, height: h },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-    }).from(el).save().then(restore).catch(err => {
+    }).from(fresh).save().then(cleanup).catch(err => {
       console.error('PDF generation failed:', err);
-      restore();
+      cleanup();
       alert('La génération du PDF a échoué : ' + (err && err.message ? err.message : err));
     });
-  }, 100);
+  }, 200);
 }
 
 // Boot
