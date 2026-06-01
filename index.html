@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Simulateur de prix Talkspirit</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -249,10 +248,12 @@
   }
   .chat-send:hover { background: var(--brand-700); }
 
-  /* Print — seul #quote-print est visible */
+  /* Print — seul #quote-print est visible, sans en-têtes/pieds de page du navigateur */
+  @page { margin: 0; size: A4; }
   @media print {
+    html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
     body > *:not(#quote-print) { display: none !important; }
-    #quote-print { display: block !important; }
+    #quote-print { display: block !important; padding: 12mm 0 !important; }
   }
   #quote-print { display: none; }
 
@@ -2422,49 +2423,7 @@ function printQuote() {
       </div>
     </div>`;
 
-  // Build a fresh container in body (avoids polluted #quote-print id with display:none CSS rule)
-  const quoteHtml = document.getElementById('quote-print').innerHTML;
-  const fresh = document.createElement('div');
-  fresh.className = 'pdf-render-container';
-  fresh.style.cssText = 'position:fixed;left:0;top:0;width:800px;background:#ffffff;z-index:99998;font-family:DM Sans,sans-serif;color:#2E1F1C;';
-  fresh.innerHTML = quoteHtml;
-  document.body.appendChild(fresh);
-
-  // Loading overlay on top
-  const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(249,246,243,0.95);display:flex;align-items:center;justify-content:center;font-family:DM Sans,sans-serif;color:#2E1F1C;font-weight:700;font-size:18px;';
-  overlay.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;gap:12px;"><div style="width:32px;height:32px;border:3px solid #E2D6CA;border-top-color:#F56220;border-radius:50%;animation:spin 0.9s linear infinite;"></div><div>Génération du PDF…</div></div>';
-  const spinStyle = document.createElement('style');
-  spinStyle.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
-  document.head.appendChild(spinStyle);
-  document.body.appendChild(overlay);
-
-  const filename = 'simulation-talkspirit-' + refStr + '.pdf';
-  const cleanup = () => {
-    fresh.remove();
-    overlay.remove();
-    spinStyle.remove();
-  };
-
-  // Delay so the browser fully lays out the new element before snapshot
-  setTimeout(() => {
-    const w = fresh.offsetWidth;
-    const h = fresh.offsetHeight;
-    html2pdf().set({
-      margin: [10, 10, 10, 10],
-      filename: filename,
-      image: { type: 'jpeg', quality: 0.98 },
-      // CRITICAL: pass width+height (canvas size) but DO NOT pass windowWidth/Height
-      // (those would force a layout reflow and shift content)
-      html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false, imageTimeout: 0, width: w, height: h },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-    }).from(fresh).save().then(cleanup).catch(err => {
-      console.error('PDF generation failed:', err);
-      cleanup();
-      alert('La génération du PDF a échoué : ' + (err && err.message ? err.message : err));
-    });
-  }, 200);
+  window.print();
 }
 
 // Boot
