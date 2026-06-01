@@ -248,12 +248,10 @@
   }
   .chat-send:hover { background: var(--brand-700); }
 
-  /* Print — seul #quote-print est visible, sans en-têtes/pieds de page du navigateur */
-  @page { margin: 0; size: A4; }
+  /* Print — seul #quote-print est visible */
   @media print {
-    html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
     body > *:not(#quote-print) { display: none !important; }
-    #quote-print { display: block !important; padding: 12mm 0 !important; }
+    #quote-print { display: block !important; }
   }
   #quote-print { display: none; }
 
