@@ -2369,7 +2369,10 @@ function printQuote() {
 
   document.getElementById('quote-print').innerHTML = `
     <div class="q-header">
-      <img class="q-logo" src="https://assets-global.website-files.com/63f4481e7f89ee1c5b69c77f/63f4481e7f89ee1c5b69c7b3_Logo-Talkspirit-Orange.svg" alt="Talkspirit">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <svg width="28" height="28" viewBox="0 0 1080 1080" fill="none"><path d="M867.857 1072.29C842.143 1072.29 820.286 1063.29 802.286 1045.29C678.857 911.572 592.714 807.429 543.857 732.857L381.857 991.286C363.857 1022.14 334.286 1037.57 293.143 1037.57C246.857 1037.57 223.714 1015.71 223.714 972C223.714 964.286 226.286 950.143 231.429 929.571L424.286 624.857C318.857 648 222.429 690.429 135 752.143C104.143 767.572 81 775.286 65.5714 775.286C45 775.286 28.2857 768.857 15.4286 756C5.14285 740.572 0 721.286 0 698.143C0 672.429 15.4286 646.714 46.2857 621C167.143 543.857 277.714 491.143 378 462.857C360 439.714 333 389.572 297 312.429C261 235.286 230.143 182.571 204.429 154.286C199.286 138.857 196.714 122.143 196.714 104.143C196.714 81.0001 207 59.1429 227.571 38.5714C248.143 18.0001 271.286 7.71448 297 7.71448C338.143 7.71448 384.429 54.0001 435.857 146.571C456.429 182.571 478.286 225 501.429 273.857L563.143 393.429V397.286C648 261 707.143 158.143 740.571 88.7143C768.857 50.1429 801 30.8573 837 30.8573C883.286 30.8573 906.429 52.7144 906.429 96.4287C906.429 122.143 884.572 172.286 840.857 246.857L740.571 420.429C897.429 405 979.714 396 987.429 393.429C1049.14 393.429 1080 412.714 1080 451.286C1080 474.429 1071 497.572 1053 520.714C1035 541.286 1013.14 556.714 987.429 567C948.857 572.143 896.143 577.286 829.286 582.429L686.571 594C753.429 694.286 840.857 801 948.857 914.143C959.143 924.429 964.286 943.714 964.286 972C964.286 997.714 954 1020.86 933.429 1041.43C912.857 1062 891 1072.29 867.857 1072.29Z" fill="#F56220"/></svg>
+        <span style="font-size:18px;font-weight:800;color:#2E1F1C;letter-spacing:-0.3px;">Talkspirit</span>
+      </div>
       <div class="q-header-right">
         <h1>${t('q_title')}</h1>
         <div class="q-ref">${t('q_ref_prefix')} ${refStr} · ${dateStr}</div>
@@ -2443,7 +2446,7 @@ function printQuote() {
       margin: [10, 10, 10, 10],
       filename: filename,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false },
+      html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false, imageTimeout: 0 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     }).from(el).save().then(restore).catch(err => {
