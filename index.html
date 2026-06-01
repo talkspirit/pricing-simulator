@@ -2423,13 +2423,25 @@ function printQuote() {
     </div>`;
 
   const el = document.getElementById('quote-print');
-  // Move quote off-screen but fully rendered, so html2canvas can capture it
-  const prev = { display: el.style.display, position: el.style.position, left: el.style.left, top: el.style.top, width: el.style.width };
+  // Render the quote in a real, visible container so html2canvas computes proper dimensions.
+  // We cover it with a full-screen overlay so the user only sees a "Génération du PDF…" message.
+  const prev = { display: el.style.display, position: el.style.position, left: el.style.left, top: el.style.top, width: el.style.width, background: el.style.background, zIndex: el.style.zIndex };
   el.style.display = 'block';
-  el.style.position = 'absolute';
-  el.style.left = '-99999px';
+  el.style.position = 'fixed';
+  el.style.left = '0';
   el.style.top = '0';
   el.style.width = '800px';
+  el.style.background = '#ffffff';
+  el.style.zIndex = '99998';
+
+  // Loading overlay on top
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(249,246,243,0.95);display:flex;align-items:center;justify-content:center;font-family:DM Sans,sans-serif;color:#2E1F1C;font-weight:700;font-size:18px;';
+  overlay.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;gap:12px;"><div style="width:32px;height:32px;border:3px solid #E2D6CA;border-top-color:#F56220;border-radius:50%;animation:spin 0.9s linear infinite;"></div><div>Génération du PDF…</div></div>';
+  const spinStyle = document.createElement('style');
+  spinStyle.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+  document.head.appendChild(spinStyle);
+  document.body.appendChild(overlay);
 
   const filename = 'simulation-talkspirit-' + refStr + '.pdf';
   const restore = () => {
@@ -2438,15 +2450,21 @@ function printQuote() {
     el.style.left = prev.left;
     el.style.top = prev.top;
     el.style.width = prev.width;
+    el.style.background = prev.background;
+    el.style.zIndex = prev.zIndex;
+    overlay.remove();
+    spinStyle.remove();
   };
 
-  // Small delay to ensure browser has applied the new styles before html2canvas snapshots
+  // Delay so the browser fully lays out the now-visible element before snapshot
   setTimeout(() => {
+    const w = el.offsetWidth || 800;
+    const h = el.offsetHeight;
     html2pdf().set({
       margin: [10, 10, 10, 10],
       filename: filename,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false, imageTimeout: 0 },
+      html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false, imageTimeout: 0, width: w, height: h, windowWidth: w, windowHeight: Math.max(window.innerHeight, h) },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     }).from(el).save().then(restore).catch(err => {
@@ -2454,7 +2472,7 @@ function printQuote() {
       restore();
       alert('La génération du PDF a échoué : ' + (err && err.message ? err.message : err));
     });
-  }, 50);
+  }, 100);
 }
 
 // Boot
