@@ -551,6 +551,23 @@
     </h2>
     <p class="mb-6" style="color: var(--muted);" data-i18n="s4_desc">Une seule case à cocher si vous êtes éligible. Le tarif s'ajuste sur toutes les lignes.</p>
 
+    <!-- Remise automatique multi-modules -->
+    <div class="card bg-white p-6 md:p-8 mb-4" id="auto-discount-card">
+      <div class="flex items-start gap-4">
+        <input type="checkbox" id="auto-discount-checkbox" class="mt-1" style="width: 20px; height: 20px; accent-color: var(--brand); cursor: pointer;" checked />
+        <div style="flex:1">
+          <div class="font-bold mb-1" style="font-size: 16px;" data-i18n="auto_disc_label">Remise multi-modules (automatique)</div>
+          <div style="color: var(--muted); font-size: 14px;" id="auto-discount-desc"></div>
+          <div class="flex items-center gap-3 mt-3 flex-wrap" id="auto-discount-controls">
+            <label class="kicker-muted" data-i18n="auto_disc_rate">Taux appliqué</label>
+            <input type="number" id="auto-discount-input" min="0" max="100" step="1" class="num-input-small" />
+            <span style="color: var(--muted); font-size: 14px;">%</span>
+            <button id="auto-discount-reset" style="background:none;border:none;color:var(--brand-700);text-decoration:underline;font-weight:600;cursor:pointer;font-size:13px;display:none;" data-i18n="auto_disc_reset">Revenir au taux automatique</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="card bg-white p-6 md:p-8 mb-4" style="background: var(--brand-50);">
       <label class="flex items-start gap-4 cursor-pointer">
         <input type="checkbox" id="ngo-checkbox" class="mt-1" style="width: 20px; height: 20px; accent-color: var(--brand); cursor: pointer;" />
@@ -886,6 +903,9 @@ const PRICING = {
         'Activation immédiate par tranche supplémentaire'
       ] }
   ],
+  // Remise automatique selon le nombre de modules activés (Chiffreur 2025 :
+  // Remise2 = 5 %, Remise3 = 10 %, Remise4 = 15 %). Modules seuls, Rise & Scale.
+  auto_app_discount: { two: 5, three: 10, four_plus: 15 },
   guests: {
     tranche_size: 100,
     rates: {
@@ -938,6 +958,14 @@ const I18N = {
     price_ht:'Prix hors taxes (HT)',
     hola_warning:`<strong>Sans Structure, vous perdez le cœur d\'Holaspirit.</strong> Rôles, cercles, agreements, gouvernance — tous reposent sur Structure.`,
     hola_activate:'Activer Structure',
+    auto_disc_label:'Remise multi-modules (automatique)',
+    auto_disc_rate:'Taux appliqué',
+    auto_disc_reset:'Revenir au taux automatique',
+    auto_disc_desc:'{n} module(s) activé(s) → remise automatique de {p} % sur les modules (hors forfait et add-ons). Barème : 2 modules −5 %, 3 modules −10 %, 4 et + −15 %.',
+    auto_disc_desc_ent:'Plan Enterprise : pas de remise automatique (les tarifs sont déjà dégressifs par palier). Vous pouvez forcer un taux manuellement.',
+    auto_disc_desc_one:'Un seul module activé : pas de remise automatique. À partir de 2 modules : −5 %, 3 modules : −10 %, 4 et plus : −15 %.',
+    auto_disc_line:'Remise multi-modules',
+    q_auto_disc_scope:'appliquée sur les modules.',
     ngo_label:'Association ou Établissement éducatif',
     ngo_desc:'Si votre organisation est une association à but non lucratif ou un établissement éducatif, bénéficiez automatiquement de <strong style="color:var(--brand-700)">−50 % sur toutes les lignes</strong>.',
     commercial_mode_on:'✦ Activer le mode commercial', commercial_mode_off:'✕ Masquer le mode commercial',
@@ -1009,6 +1037,14 @@ const I18N = {
     price_ht:'All prices excl. VAT',
     hola_warning:'<strong>Without Structure, you lose the core of Holaspirit.</strong> Roles, circles, agreements, governance — all rely on Structure.',
     hola_activate:'Activate Structure',
+    auto_disc_label:'Multi-module discount (automatic)',
+    auto_disc_rate:'Applied rate',
+    auto_disc_reset:'Back to automatic rate',
+    auto_disc_desc:'{n} module(s) activated → automatic {p}% discount on modules (excluding plan fee and add-ons). Scale: 2 modules −5%, 3 modules −10%, 4+ −15%.',
+    auto_disc_desc_ent:'Enterprise plan: no automatic discount (rates are already volume-based). You can still force a rate manually.',
+    auto_disc_desc_one:'Only one module activated: no automatic discount. From 2 modules: −5%, 3 modules: −10%, 4 and more: −15%.',
+    auto_disc_line:'Multi-module discount',
+    q_auto_disc_scope:'applied to modules.',
     ngo_label:'NGO or Educational institution',
     ngo_desc:'If your organisation is a non-profit or an educational institution, automatically get <strong style="color:var(--brand-700)">−50% on all lines</strong>.',
     commercial_mode_on:'✦ Enable commercial mode', commercial_mode_off:'✕ Hide commercial mode',
@@ -1080,6 +1116,14 @@ const I18N = {
     price_ht:'Alle Preise zzgl. MwSt.',
     hola_warning:'<strong>Ohne Structure verlieren Sie das Kernstück von Holaspirit.</strong> Rollen, Kreise, Vereinbarungen, Governance — alles basiert auf Structure.',
     hola_activate:'Structure aktivieren',
+    auto_disc_label:'Multi-Modul-Rabatt (automatisch)',
+    auto_disc_rate:'Angewendeter Satz',
+    auto_disc_reset:'Zurück zum automatischen Satz',
+    auto_disc_desc:'{n} Modul(e) aktiviert → automatischer Rabatt von {p} % auf die Module (ohne Grundgebühr und Add-ons). Staffel: 2 Module −5 %, 3 Module −10 %, 4+ −15 %.',
+    auto_disc_desc_ent:'Enterprise-Plan: kein automatischer Rabatt (die Preise sind bereits volumenabhängig). Ein Satz kann manuell erzwungen werden.',
+    auto_disc_desc_one:'Nur ein Modul aktiviert: kein automatischer Rabatt. Ab 2 Modulen: −5 %, 3 Module: −10 %, 4 und mehr: −15 %.',
+    auto_disc_line:'Multi-Modul-Rabatt',
+    q_auto_disc_scope:'auf die Module angewendet.',
     ngo_label:'NGO oder Bildungseinrichtung',
     ngo_desc:'Wenn Ihre Organisation eine gemeinnützige oder Bildungseinrichtung ist, erhalten Sie automatisch <strong style="color:var(--brand-700)">−50 % auf alle Positionen</strong>.',
     commercial_mode_on:'✦ Verkaufsmodus aktivieren', commercial_mode_off:'✕ Verkaufsmodus ausblenden',
@@ -1288,6 +1332,7 @@ const state = {
   activeAppTab: 'newsfeed',
   activeAddonTab: 'videoconf',
   ngo: false,
+  autoAppDiscount: { enabled: true, override: null },
   commercialMode: false,
   customDiscounts: [],   // [{ id, label, type, value, firstYearOnly }]
   perLineDiscounts: {},  // { lineId: { enabled, type, value, firstYearOnly } }
@@ -1298,6 +1343,24 @@ const state = {
 // ============================================================================
 // COMPUTE
 // ============================================================================
+// Remise automatique multi-modules (Chiffreur 2025 — Remise2/3/4).
+// S'applique aux MODULES uniquement (ni upfront, ni add-ons), sur Rise & Scale.
+// Enterprise : pas de remise auto (les prix sont déjà dégressifs).
+function autoAppDiscountFor(plan, moduleCount) {
+  if (plan === 'enterprise') return 0;
+  if (moduleCount >= 4) return PRICING.auto_app_discount.four_plus;
+  if (moduleCount === 3) return PRICING.auto_app_discount.three;
+  if (moduleCount === 2) return PRICING.auto_app_discount.two;
+  return 0;
+}
+
+// Taux effectivement appliqué : valeur auto, sauf override manuel du commercial.
+function effectiveAutoAppDiscount(plan) {
+  if (!state.autoAppDiscount.enabled) return 0;
+  const auto = autoAppDiscountFor(plan, state.apps.size);
+  return state.autoAppDiscount.override != null ? state.autoAppDiscount.override : auto;
+}
+
 function suggestPlan(licenses, guests) {
   if (licenses > 300) return 'enterprise';
   if (guests > licenses && guests > 100) return 'enterprise';
@@ -1387,7 +1450,8 @@ function computeTotal() {
     lines.push({
       id: app.id, label: app.name + holaSuffix(app), sublabel, family: app.family,
       qty: state.licenses, unitPrice: unit, discountPct: 0,
-      subtotal, note: unit == null ? 'Sur devis' : null, productGap: false
+      subtotal, note: unit == null ? 'Sur devis' : null, productGap: false,
+      isModule: true
     });
   }
 
@@ -1440,12 +1504,26 @@ function computeTotal() {
     }
   }
 
-  // Apply per-line custom discounts (after NGO, multiplicative)
+  // Remise automatique multi-modules — après NGO, sur les lignes MODULES uniquement
+  const autoAppPct = effectiveAutoAppDiscount(plan);
+  let autoAppDiscountAmount = 0;
+  if (autoAppPct > 0) {
+    for (const l of lines) {
+      if (!l.isModule || l.unitPrice == null || l.unitPrice === 0) continue;
+      const baseAfterNGO = l.qty * l.unitPrice * (1 - (l.discountPct || 0) / 100);
+      const amount = baseAfterNGO * (autoAppPct / 100);
+      l.subtotal = baseAfterNGO - amount;
+      l.autoAppDiscountPct = autoAppPct;
+      autoAppDiscountAmount += amount;
+    }
+  }
+
+  // Apply per-line custom discounts (après NGO et remise auto, multiplicatif)
   for (const l of lines) {
     if (l.unitPrice == null || l.unitPrice === 0) continue;
     const d = state.perLineDiscounts[l.id];
     if (!d || !d.enabled || !d.value) continue;
-    const baseAfterNGO = l.qty * l.unitPrice * (1 - (l.discountPct || 0) / 100);
+    const baseAfterNGO = l.qty * l.unitPrice * (1 - (l.discountPct || 0) / 100) * (1 - (l.autoAppDiscountPct || 0) / 100);
     let discountAmount;
     if (d.type === 'percent') {
       discountAmount = baseAfterNGO * (d.value / 100);
@@ -1503,7 +1581,8 @@ function computeTotal() {
   flags.holaWithoutStructure = flags.holaApps.length > 0 && !flags.structureSelected;
   flags.invalid = flags.noModuleSelected || flags.holaWithoutStructure;
 
-  return { plan, lines, subtotalBeforeGlobal, globalDiscountLines, globalDiscountAmount, globalDiscountLabel, total, flags };
+  return { plan, lines, subtotalBeforeGlobal, globalDiscountLines, globalDiscountAmount, globalDiscountLabel, total, flags,
+           autoAppPct, autoAppDiscountAmount, autoAppSuggested: autoAppDiscountFor(plan, state.apps.size) };
 }
 
 // ============================================================================
@@ -1542,6 +1621,7 @@ function render() {
   // Dynamic guests price label based on Annual/Monthly toggle
   const guestsLabel = document.getElementById('guests-price-label');
   if (guestsLabel) guestsLabel.textContent = t(state.frequency === 'monthly' ? 's1_guests_price_monthly' : 's1_guests_price_annual');
+  renderAutoDiscount(c);
   renderCustomDiscounts();
   renderPerlineList();
   renderRecap(c);
@@ -1828,6 +1908,26 @@ function renderModulesCount() {
   el.textContent = n > 0 ? '(' + n + ' activé' + (n > 1 ? 's' : '') + ')' : '';
 }
 
+function renderAutoDiscount(c) {
+  const cb = document.getElementById('auto-discount-checkbox');
+  const desc = document.getElementById('auto-discount-desc');
+  const input = document.getElementById('auto-discount-input');
+  const reset = document.getElementById('auto-discount-reset');
+  const controls = document.getElementById('auto-discount-controls');
+  if (!cb) return;
+  cb.checked = state.autoAppDiscount.enabled;
+
+  let txt;
+  if (c.plan === 'enterprise') txt = t('auto_disc_desc_ent');
+  else if (state.apps.size <= 1) txt = t('auto_disc_desc_one');
+  else txt = t('auto_disc_desc').replace('{n}', state.apps.size).replace('{p}', c.autoAppSuggested);
+  desc.innerHTML = txt;
+
+  controls.style.display = state.autoAppDiscount.enabled ? 'flex' : 'none';
+  if (document.activeElement !== input) input.value = c.autoAppPct;
+  reset.style.display = state.autoAppDiscount.override != null ? 'inline' : 'none';
+}
+
 let _discountSeq = 0;
 function addCustomDiscount() {
   state.customDiscounts.push({ id: 'disc_' + (++_discountSeq), label: '', type: 'percent', value: 10, firstYearOnly: false });
@@ -1972,8 +2072,11 @@ function renderRecap(c) {
   let html = '';
   for (const l of c.lines) {
     const unitPriceDisplay = l.unitPrice == null ? '—' : formatPrice(l.unitPrice, { forceDecimals: l.unitPrice < 10 && l.unitPrice > 0 });
-    let discountDisplay = l.discountPct > 0 ? '−' + l.discountPct + ' %' : '—';
-    if (l.extraDiscountLabel) discountDisplay = (l.discountPct > 0 ? '−' + l.discountPct + ' %, ' : '') + l.extraDiscountLabel;
+    const parts = [];
+    if (l.discountPct > 0) parts.push('−' + l.discountPct + ' %');
+    if (l.autoAppDiscountPct > 0) parts.push('−' + l.autoAppDiscountPct + ' %');
+    if (l.extraDiscountLabel) parts.push(l.extraDiscountLabel);
+    let discountDisplay = parts.length ? parts.join(', ') : '—';
     const subtotalDisplay = l.note === 'Inclus' ? '<em style="color: var(--brand);">Inclus</em>' : (l.unitPrice == null ? '<em style="color: var(--muted);">Sur devis</em>' : formatPrice(l.subtotal));
     html += '<tr>' +
       '<td>' + l.label + (l.family ? ' ' + familyBadge(l.family) : '') + (l.sublabel ? '<div class="label-secondary">' + l.sublabel + '</div>' : '') + '</td>' +
@@ -1986,7 +2089,7 @@ function renderRecap(c) {
   for (const dl of (c.globalDiscountLines || [])) {
     html += '<tr class="discount-row"><td colspan="4">' + dl.label + '</td><td class="right">−' + formatPrice(dl.amount) + '</td></tr>';
   }
-  if (state.ngo || c.globalDiscountAmount > 0 || Object.values(state.perLineDiscounts).some(d => d.enabled)) {
+  if (state.ngo || c.autoAppDiscountAmount > 0 || c.globalDiscountAmount > 0 || Object.values(state.perLineDiscounts).some(d => d.enabled)) {
     html += '<tr class="subtotal-row"><td colspan="4">' + t('subtotal_after') + '</td><td class="right">' + formatPrice(c.subtotalBeforeGlobal - c.globalDiscountAmount) + '</td></tr>';
   }
   const totalLabel = state.frequency === 'monthly' ? t('total_monthly') : t('total_annual');
@@ -2033,6 +2136,7 @@ function resetState() {
   state.activeAppTab = 'newsfeed';
   state.activeAddonTab = 'videoconf';
   state.ngo = false;
+  state.autoAppDiscount = { enabled: true, override: null };
   state.customDiscounts = [];
   state.perLineDiscounts = {};
   document.getElementById('licenses-input').value = 50;
@@ -2160,6 +2264,17 @@ function parseChatCommand(raw) {
     return '✓ ' + results.join('. ') + '.';
   }
 
+  // Remise auto multi-modules
+  if (/remise (auto|multi.?modules?)/.test(t)) {
+    state.autoAppDiscount.enabled = !deactivate;
+    if (deactivate) state.autoAppDiscount.override = null;
+    render();
+    const c = computeTotal();
+    return state.autoAppDiscount.enabled
+      ? 'Remise multi-modules <strong>activée</strong> (−' + c.autoAppPct + ' % sur les modules).'
+      : 'Remise multi-modules <strong>désactivée</strong>.';
+  }
+
   // NGO
   if (/(ngo|association|asso|éducation|education|école|ecole)/.test(t)) {
     state.ngo = !deactivate;
@@ -2240,6 +2355,23 @@ function initEvents() {
   // Language
   document.querySelectorAll('#lang-toggle button').forEach(b => {
     b.addEventListener('click', () => { state.lang = b.dataset.lang; render(); });
+  });
+
+  // Remise auto multi-modules
+  document.getElementById('auto-discount-checkbox').addEventListener('change', (e) => {
+    state.autoAppDiscount.enabled = e.target.checked;
+    if (!e.target.checked) state.autoAppDiscount.override = null;
+    render();
+  });
+  document.getElementById('auto-discount-input').addEventListener('input', (e) => {
+    const v = Math.max(0, Math.min(100, parseFloat(e.target.value || '0')));
+    const c = computeTotal();
+    state.autoAppDiscount.override = (v === c.autoAppSuggested) ? null : v;
+    render();
+  });
+  document.getElementById('auto-discount-reset').addEventListener('click', () => {
+    state.autoAppDiscount.override = null;
+    render();
   });
 
   // NGO
@@ -2345,8 +2477,11 @@ function printQuote() {
   let rows = '';
   for (const l of c.lines) {
     const pu = l.unitPrice == null ? '—' : formatPrice(l.unitPrice, { forceDecimals: l.unitPrice < 10 && l.unitPrice > 0 });
-    let remise = l.discountPct > 0 ? `−${l.discountPct} %` : '—';
-    if (l.extraDiscountLabel) remise = (l.discountPct > 0 ? `−${l.discountPct} %, ` : '') + l.extraDiscountLabel;
+    const qParts = [];
+    if (l.discountPct > 0) qParts.push(`−${l.discountPct} %`);
+    if (l.autoAppDiscountPct > 0) qParts.push(`−${l.autoAppDiscountPct} %`);
+    if (l.extraDiscountLabel) qParts.push(l.extraDiscountLabel);
+    const remise = qParts.length ? qParts.join(', ') : '—';
     const st = l.note === 'Inclus' ? `<em style="color:#F56220">${t('activated')}</em>` : (l.unitPrice == null ? `<em style="color:#AA7F65">${t('quote_required')}</em>` : formatPrice(l.subtotal));
     rows += `<tr>
       <td>${l.label}${qBadge(l.family)}${l.sublabel ? `<div class="q-sublabel">${l.sublabel}</div>` : ''}</td>
@@ -2359,13 +2494,16 @@ function printQuote() {
   for (const dl of (c.globalDiscountLines || [])) {
     rows += `<tr class="q-discount-row"><td colspan="4">${dl.label}</td><td class="r">−${formatPrice(dl.amount)}</td></tr>`;
   }
-  const hasDiscounts = state.ngo || c.globalDiscountAmount > 0 || Object.values(state.perLineDiscounts).some(d => d.enabled);
+  const hasDiscounts = state.ngo || c.autoAppDiscountAmount > 0 || c.globalDiscountAmount > 0 || Object.values(state.perLineDiscounts).some(d => d.enabled);
   if (hasDiscounts) {
     rows += `<tr class="q-subtotal-row"><td colspan="4">${t('q_subtotal')}</td><td class="r">${formatPrice(c.subtotalBeforeGlobal - c.globalDiscountAmount)}</td></tr>`;
   }
   const totalLabel = freq === 'monthly' ? t('q_total_monthly') : t('q_total_annual');
   rows += `<tr class="q-total-row"><td colspan="4">${totalLabel}</td><td class="r">${formatPrice(c.total)}</td></tr>`;
 
+  const autoNote = c.autoAppDiscountAmount > 0
+    ? '<br>✓ ' + t('auto_disc_line') + ' −' + c.autoAppPct + ' % (' + formatPrice(c.autoAppDiscountAmount) + ') ' + t('q_auto_disc_scope')
+    : '';
   const ngoNote = state.ngo ? '<br>' + t('q_ngo_note') : '';
   const entNote = c.flags.enterprise ? '<br>' + t('q_enterprise_note') : '';
   const guestsStr = state.guests > 0 ? ` · ${state.guests} ${t('q_guests_label')}` : '';
@@ -2416,7 +2554,7 @@ function printQuote() {
     </div>
     <div class="q-footer">
       <div class="q-note">
-        ${t('q_footer_note')} ${dateStr}.${ngoNote}${entNote}
+        ${t('q_footer_note')} ${dateStr}.${autoNote}${ngoNote}${entNote}
         <br>${t('q_contact')} <strong>contact@talkspirit.com</strong>
       </div>
       <div class="q-total-summary">
