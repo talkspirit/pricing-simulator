@@ -1,0 +1,26 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  node-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check inline JS syntax
+        run: |
+          node -e "
+            const fs = require('fs');
+            const html = fs.readFileSync('index.html', 'utf8');
+            const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
+            fs.writeFileSync('/tmp/extracted.js', scripts.join('\n\n'));
+          "
+          node --check /tmp/extracted.js
+      - name: Run PRICING regression tests
+        run: node --test "test/*.test.js"

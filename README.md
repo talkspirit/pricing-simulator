@@ -18,3 +18,13 @@ Accès protégé par mot de passe (demande à l'équipe).
 ## Usage
 
 Ouvre l'URL, entre le mot de passe, simule, télécharge en PDF.
+
+## Tests
+
+Régression sur l'objet `PRICING` (aucune dépendance — utilise `node:test` intégré) :
+
+```
+node --test "test/*.test.js"
+```
+
+Lancés automatiquement en CI sur chaque push/PR (`.github/workflows/test.yml`).
